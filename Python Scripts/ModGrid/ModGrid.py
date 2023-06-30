@@ -2388,7 +2388,17 @@ class HotswapComponent(Component):
 	#     self._update_appointed_device()
 
 
+class SpecialBicoloredMomentaryBehaviour(BicoloredMomentaryBehaviour):
+
+	def press_immediate(self, *a, **k):
+		pass
+
+	def press_delayed(self, *a, **k):
+		super(SpecialBicoloredMomentaryBehaviour, self).press_immediate(*a, **k)
+
+
 class ModGrid(ControlSurface):
+
 
 
 	_rgb = 0
@@ -2535,6 +2545,7 @@ class ModGrid(ControlSurface):
 
 		self._shiftMode = EventMode()
 		self._altMode = EventMode()
+		self._sendMode = EventMode()
 
 		self._shiftModes = ModesComponent(name = 'ShiftModes')
 		self._shiftModes.add_mode('disabled', [])
@@ -2552,6 +2563,14 @@ class ModGrid(ControlSurface):
 		self._altModes.set_enabled(True)
 		self._alt._display.set_data_sources([DisplayDataSource("Alt")])
 
+		self._sendModes = ModesComponent(name = 'SendModes')
+		self._sendModes.add_mode('disabled', [])
+		self._sendModes.add_mode('send', [self._sendMode], behaviour = SpecialBicoloredMomentaryBehaviour(color = 5, off_color = 10))
+		self._sendModes.layer = Layer(priority = 6, send_button = self._button[23])
+		self._sendModes.selected_mode = 'disabled'
+		self._sendModes.set_enabled(True)
+		# self._shift._display.set_data_sources([DisplayDataSource("Shift")])
+	
 		self._shifted_chain_select_matrix = ButtonMatrixElement(rows = [[DisplayingComboElement(button, "Stop", modifier = self._shiftMode) for button in self._button[96:104]]])
 		self._shifted_left_matrix = ButtonMatrixElement(rows = [[DisplayingComboElement(self._pad[(index*16)+7], "Scene", modifier = self._shiftMode)]for index in range(8)])
 
@@ -2574,7 +2593,7 @@ class ModGrid(ControlSurface):
 	def _setup_autoarm(self):
 		self._autoarm = UtilAutoArmComponent(name='Auto_Arm')
 		# self._autoarm.layer = Layer(priority = 6, util_autoarm_toggle_button = self._pad[16])
-		self._autoarm.layer = Layer(priority = 6, util_autoarm_toggle_button = self._with_alt_latch(control=self._button[96], text='AutoArm'))
+		self._autoarm.layer = Layer(priority = 6, util_autoarm_toggle_button = self._with_alt_latch(control=self._button[88], text='AutoArm'))
 		self._autoarm.set_enabled(False)
 		#self._auto_arm._can_auto_arm_track = self._can_auto_arm_track
 
@@ -2650,8 +2669,8 @@ class ModGrid(ControlSurface):
 		self._mixer.sends_layer = AddLayerMode(self._mixer, Layer(priority = 6,
 			send_controls = self._encoder_matrix.submatrix[:8, :]))
 		self._mixer.send_navigation.scroll_layer = AddLayerMode(self._mixer.send_navigation, Layer(priority = 8, 
-			scroll_up_button = self._with_alt_latch(control=self._button[16], text="Send Up"),
-			scroll_down_button = self._with_alt_latch(control=self._button[18], text="Send Down")))
+			scroll_up_button = self._with_sends_latch(control=self._button[95], text="Send Up"),
+			scroll_down_button = self._with_sends_latch(control=self._button[94], text="Send Down")))
 		self._mixer.volume_layer = AddLayerMode(self._mixer, Layer(priority = 6,
 			volume_controls = self._encoder_matrix.submatrix[:8, :]))
 		self._mixer.pan_layer = AddLayerMode(self._mixer, Layer(priority = 6,
@@ -2678,8 +2697,8 @@ class ModGrid(ControlSurface):
 		self._track_creator = TrackCreatorComponent()
 		# self._track_creator.layer = Layer(priority = 6, create_audio_track_button = self._button[18], create_midi_track_button = self._with_shift_latch(self._button[18], "Create MIDI"))
 		self._track_creator.layer = Layer(priority = 6, 
-			create_audio_track_button=self._with_alt_latch(control=self._button[97], text='Create Audio'), 
-			create_midi_track_button = self._with_alt_latch(control=self._button[98], text="Create MIDI"))
+			create_audio_track_button=self._with_alt_latch(control=self._button[89], text='Create Audio'), 
+			create_midi_track_button = self._with_alt_latch(control=self._button[90], text="Create MIDI"))
 
 
 	def _setup_undo_redo(self):
@@ -2710,7 +2729,7 @@ class ModGrid(ControlSurface):
 		self._recorder.layer = Layer(priority = 6, 
 			record_button = self._button[7], 
 			new_button = self._with_shift_latch(control=self._button[7], text="New"),
-			automation_button = self._with_alt_latch(control=self._button[5], text="Automation"))
+			automation_button = self._with_shift_latch(control=self._button[5], text="Automation"))
 
 		# record_button = self._button[6],
 		# , scene_list_new_button = self._button[38]
@@ -3004,6 +3023,9 @@ class ModGrid(ControlSurface):
 
 	def _with_text(self, control, text):
 		return DisplayingButtonWrapper(control, text)
+
+	def _with_sends_latch(self, control = None, text = ""):
+		return DisplayingComboElement(control, text, modifier=self._sendMode)
 
 
 	def _can_auto_arm_track(self, track):
