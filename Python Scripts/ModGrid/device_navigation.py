@@ -6,7 +6,7 @@ from functools import partial,  update_wrapper, singledispatch
 from future.moves.itertools import zip_longest
 
 import Live
-from ableton.v2.base import find_if, first, index_if, listenable_property, listens, listens_group, liveobj_changed, liveobj_valid, EventObject, SlotGroup, task
+from ableton.v2.base import PY3, find_if, first, index_if, listenable_property, listens, listens_group, liveobj_changed, liveobj_valid, EventObject, SlotGroup, task
 from ableton.v2.control_surface import DecoratorFactory, device_to_appoint
 from ableton.v2.control_surface.components import DeviceNavigationComponent as DeviceNavigationComponentBase, FlattenedDeviceChain, ItemSlot, ItemProvider, is_empty_rack, nested_device_parent
 from ableton.v2.control_surface.control import control_list, StepEncoderControl
@@ -26,12 +26,26 @@ from Push2.item_lister import IconItemSlot, ItemListerComponent
 # from aumhaa.v2.base.debug import log_flattened_arguments
 from aumhaa.v2.base import initialize_debug
 
+# if PY3:
+# 	from functools import singledispatch
+# else:
+# 	from singledispatch import singledispatch
+
+# def singledispatchmethod(func):
+# 	dispatcher = singledispatch(func)
+
+# 	def wrapper(*args, **kw):
+# 		return (dispatcher.dispatch(args[1].__class__))(*args, **kw)
+
+# 	wrapper.register = dispatcher.register
+# 	update_wrapper(wrapper, func)
+# 	return wrapper
 
 def nop(self, *a, **k):
 	pass
 
 
-LOCAL_DEBUG = True
+LOCAL_DEBUG = False
 debug = initialize_debug(local_debug=LOCAL_DEBUG)
 
 
@@ -43,11 +57,12 @@ def singledispatchmethod(func):
 	dispatcher = singledispatch(func)
 
 	def wrapper(*args, **kw):
+		return dispatcher.dispatch(args[0].__class__)(*args, **kw)
 		# debug('args:', args)
-		if len(args) > 1:
-			return dispatcher.dispatch(args[1].__class__)(*args, **kw)
-		else:
-			return nop
+		# if len(args) > 1:
+		# 	return dispatcher.dispatch(args[0].__class__)(*args, **kw)
+		# else:
+		# 	return nop
 
 	wrapper.register = dispatcher.register
 	update_wrapper(wrapper, func)
@@ -61,13 +76,20 @@ def find_drum_pad(items):
 
 @singledispatchmethod
 def is_active_element(drum_pad):
+	# debug('drumpad is_active')
 	return not drum_pad.mute and drum_pad.canonical_parent.is_active
 
 
 @singledispatchmethod
 def is_active_element(device):
 	return device.is_active
+	# active = is_on(device)
+	# debug('active:', active)
+	# return active
 
+@is_active_element.register(Live.DrumPad.DrumPad)
+def _(drum_pad):
+	return not drum_pad.mute and drum_pad.canonical_parent.is_active
 
 def set_enabled(device, is_on):
 	device.parameters[0].value = int(is_on)
@@ -166,7 +188,7 @@ class SpecialBankSelectionComponent(BankSelectionComponent):
 		debug('BANK._on_items_changed:', items)
 		for source, item in zip_longest(self.text_data_sources, items):
 			if source:
-				source.set_display_string(item if not item is None else '--')
+				source.set_display_string(item if not item is None else '')
 
 	def set_select_buttons(self, buttons):
 		if not buttons is None:
@@ -402,7 +424,8 @@ class MoveDeviceComponent(Component):
 class DeviceNavigationComponent(DeviceNavigationComponentBase):
 	__events__ = ('drum_pad_selection', 'mute_solo_stop_cancel_action_performed')
 	color_class_name = 'DeviceNavigation'
-	disable_button = DisplayingButtonControl(text="Disable")
+	# disable_button = DisplayingButtonControl(text="Disable")
+	disable_button = ButtonControl()
 	text_data_sources = [DisplayDataSource('') for index in range(8)]
 
 	def __init__(self, device_bank_registry = None, banking_info = None, delete_handler = None, track_list_component = None, *a, **k):
@@ -423,6 +446,7 @@ class DeviceNavigationComponent(DeviceNavigationComponentBase):
 		self._last_pressed_button_index = -1
 		self._selected_on_previous_press = None
 		self._was_in_chain_mode = False
+		self._was_in_bank_mode = False
 		self._modes = ModesComponent(parent=self)
 		self._modes.add_mode('default', [partial(self.chain_selection.set_parent, None), partial(self.bank_selection.set_device, None), self.update_item_name_listeners, DelayMode(self.update, delay = .05, parent_task_group = self._tasks)])
 		self._modes.add_mode('chain_selection', [self.chain_selection, self.update_item_name_listeners, DelayMode(self.update, delay = .05, parent_task_group = self._tasks)])
@@ -524,7 +548,8 @@ class DeviceNavigationComponent(DeviceNavigationComponentBase):
 			if not self._delete_handler or not self._delete_handler.is_deleting:
 				self._selected_on_previous_press = device_or_pad if self.selected_object != device_or_pad else None
 				self._was_in_chain_mode = self._modes.selected_mode == 'chain_selection'
-				debug('was_in_chain_mode:', self._was_in_chain_mode)
+				self._was_in_bank_mode = self._modes.selected_mode == 'bank_selection'
+				# debug('was_in_chain_mode:', self._was_in_chain_mode, self._was_in_bank_mode)
 				self._select_item(device_or_pad)
 
 	def _on_select_button_released_immediately(self, button):
@@ -570,24 +595,19 @@ class DeviceNavigationComponent(DeviceNavigationComponentBase):
 	@listens('state')
 	def __on_device_item_state_changed(self):
 		self._update_button_colors()
-		debug('___________________________________________________________________adding task...')
+		# debug('___________________________________________________________________adding task...')
 		self._tasks.add(self._update_button_colors)
 
 	@listenable_property
 	def item_names(self):
 		items = ['-' for index in range(16)]
-		# if self._modes.selected_mode == 'default' or self._modes.selected_mode == 'chain_selection':
 		if self._modes.selected_mode == 'default' or self._modes.selected_mode == 'chain_selection':
 			new_items = [str(item.name).replace(' ', '_') if hasattr(item, 'name') else '-' for item in self.items]
 			items[:len(new_items)] = new_items
-			#debug('mode is default, names are:', items)
 		if self._modes.selected_mode == 'chain_selection':
 			items[8:] = [str(item.name).replace(' ', '_') if hasattr(item, 'name') else  '-' for item in self.chain_selection.items]
-			#debug('mode is chain_selection, names are:', items)
 		elif self._modes.selected_mode == 'bank_selection':
 			items[8:] = [str(item.name).replace(' ', '_') if hasattr(item, 'name') else '-' for item in self.bank_selection.items]
-			#debug('mode is bank_selection, names are:', items)
-		#debug('item names are:', items)
 		return tuple(items)
 
 	@listens('items')
@@ -595,7 +615,7 @@ class DeviceNavigationComponent(DeviceNavigationComponentBase):
 		# new_items = map(lambda x: x.item, self.bank_selection.items)
 		# names = self.item_names
 		# self.notify_item_names()
-		debug('BANK CHANGED')
+		# debug('BANK CHANGED')
 		self.update_item_name_listeners()
 
 	@listens('items')
@@ -650,8 +670,9 @@ class DeviceNavigationComponent(DeviceNavigationComponentBase):
 		device_or_pad = item.item
 		is_active = liveobj_valid(device_or_pad) and is_active_element(device_or_pad)
 		chain = find_chain_or_track(device_or_pad)
+		# debug('is active:', button_index, is_active, liveobj_valid(device_or_pad),is_active_element(device_or_pad) )
 		if not is_active:
-			return 'DefaultButton.Off'
+			return 'ItemNavigation.ItemSelectedOff' if is_selected else 'ItemNavigation.ItemNotSelectedOff'
 		elif is_selected:
 			return 'ItemNavigation.ItemSelected'
 		elif liveobj_valid(chain):
@@ -779,22 +800,30 @@ class DeviceNavigationComponent(DeviceNavigationComponentBase):
 	@singledispatchmethod
 	def _on_reselecting_object(self, device):
 		debug('_on_reselecting_object object',  self._modes.selected_mode)
-		# if self._modes.selected_mode is u'chain_selection':
-		# 	self._modes.selected_mode = u'default'
+		# if self._modes.selected_mode == 'chain_selection':
 		# 	debug('just set mode to default...')
+		# 	self._modes.selected_mode = 'default'
+		# elif self._modes.selected_mode == 'bank_selection':
+		# 	debug('just set mode to default...')
+		# 	self._modes.selected_mode = 'default'
 		if liveobj_valid(device) and hasattr(device, 'can_have_chains') and device.can_have_chains:
 			if not device.can_have_drum_pads:
 				self._toggle(device)
 			else:
 				if self._was_in_chain_mode:
+					debug('was in chain mode')
 					self._modes.selected_mode = 'default'
 					self._was_in_chain_mode = False
 				else:
 					self._show_chains(device)
 
 		else:
-			self.bank_selection.set_device(device)
-			self._modes.selected_mode = 'bank_selection'
+			if self._was_in_bank_mode:
+				self._modes.selected_mode = 'default'
+				self._was_in_bank_mode = False
+			else:
+				self.bank_selection.set_device(device)
+				self._modes.selected_mode = 'bank_selection'
 
 	@singledispatchmethod
 	def _on_pressed_delayed(self, _):
@@ -802,8 +831,9 @@ class DeviceNavigationComponent(DeviceNavigationComponentBase):
 
 	@singledispatchmethod
 	def _on_pressed_delayed(self, device):
-		self._show_chains(device)
-		self._begin_move_device(device)
+		# self._show_chains(device)
+		# self._begin_move_device(device)
+		self._toggle_device(device)
 
 	@singledispatchmethod
 	def _delete_item(self, pad):

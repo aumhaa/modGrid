@@ -35,7 +35,7 @@ from aumhaa.v2.control_surface.instrument_consts import *
 from aumhaa.v2.base import initialize_debug
 from .Map import *
 
-LOCAL_DEBUG = True
+LOCAL_DEBUG = False
 debug = initialize_debug(local_debug=LOCAL_DEBUG)
 
 

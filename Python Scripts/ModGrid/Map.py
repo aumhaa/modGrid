@@ -17,10 +17,104 @@ FAVORITE_CLIP_COLOR = 14
 # COLOR_MAP = [1,2,3,4,5,6,7]
 COLOR_MAP = range(1, 128)
 
+WHITEKEYS = [0, 2, 4, 5, 7, 9, 11, 12, 14, 16, 17, 19, 21, 23, 24]
 
 LENGTH_VALUES = [2, 3, 4]
 
 CHANNELS = ['Ch. 2', 'Ch. 3', 'Ch. 4', 'Ch. 5', 'Ch. 6', 'Ch. 7', 'Ch. 8', 'Ch. 9', 'Ch. 10', 'Ch. 11', 'Ch. 12', 'Ch. 13', 'Ch. 14']
+
+ascii_translations = {'0':48, 
+	 '1':49, 
+	 '2':50, 
+	 '3':51, 
+	 '4':52, 
+	 '5':53, 
+	 '6':54, 
+	 '7':55, 
+	 '8':56, 
+	 '9':57, 
+	 'A':65, 
+	 'B':66, 
+	 'C':67, 
+	 'D':68, 
+	 'E':69, 
+	 'F':70, 
+	 'G':71, 
+	 'H':72, 
+	 'I':73, 
+	 'J':74, 
+	 'K':75, 
+	 'L':76, 
+	 'M':77, 
+	 'N':78, 
+	 'O':79, 
+	 'P':80, 
+	 'Q':81, 
+	 'R':82, 
+	 'S':83, 
+	 'T':84, 
+	 'U':85, 
+	 'V':86, 
+	 'W':87, 
+	 'X':88, 
+	 'Y':89, 
+	 'Z':90, 
+	 'a':97, 
+	 'b':98, 
+	 'c':99, 
+	 'd':100, 
+	 'e':101, 
+	 'f':102, 
+	 'g':103, 
+	 'h':104, 
+	 'i':105, 
+	 'j':106, 
+	 'k':107, 
+	 'l':108, 
+	 'm':109, 
+	 'n':110, 
+	 'o':111, 
+	 'p':112, 
+	 'q':113, 
+	 'r':114, 
+	 's':115, 
+	 't':116, 
+	 'u':117, 
+	 'v':118, 
+	 'w':119, 
+	 'x':120, 
+	 'y':121, 
+	 'z':122, 
+	 '@':64, 
+	 ' ':32, 
+	 '!':33, 
+	 '"':34, 
+	 '#':35, 
+	 '♯':35, 
+	 '.':46, 
+	 ',':44, 
+	 ':':58, 
+	 ';':59, 
+	 '?':63, 
+	 '<':60, 
+	 '>':62, 
+	 '[':91, 
+	 ']':93, 
+	 '_':95, 
+	 '-':45, 
+	 '|':124, 
+	 '&':38, 
+	 '^':94, 
+	 '~':126, 
+	 '`':96, 
+	 "'":39, 
+	 '%':37, 
+	 '(':40, 
+	 ')':41, 
+	 '/':47, 
+	 '\\':92, 
+	 '*':42, 
+	 '+':43}
 
 """These are the scales we have available.  You can freely add your own scales to this """
 SCALES = 	{'Mod':[0,1,2,3,4,5,6,7,8,9,10,11],
@@ -127,8 +221,10 @@ class UtilColors:
 		Unused = LividRGB.OFF
 
 	class ItemNavigation:
-		ItemNotSelected = LividRGB.BLUE
-		ItemSelected = LividRGB.YELLOW
+		ItemNotSelected = LividRGB.MAGENTA
+		ItemNotSelectedOff = LividRGB.OFF
+		ItemSelected = LividRGB.CYAN
+		ItemSelectedOff = LividRGB.WHITE
 		NoItem = LividRGB.OFF
 
 	class EditModeOptions:
@@ -138,7 +234,9 @@ class UtilColors:
 
 	class DeviceNavigation:
 		ItemNotSelected = LividRGB.MAGENTA
+		ItemNotSelectedOff = LividRGB.OFF
 		ItemSelected = LividRGB.CYAN
+		ItemSelectedOff = LividRGB.WHITE
 		NoItem = LividRGB.OFF
 
 	class BankSelection:

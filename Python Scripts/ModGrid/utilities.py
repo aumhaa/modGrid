@@ -3,7 +3,7 @@
 
 from aumhaa.v2.base.debug import *
 
-LOCAL_DEBUG = True
+LOCAL_DEBUG = False
 debug = initialize_debug(local_debug = LOCAL_DEBUG)
 
 
@@ -16,7 +16,12 @@ class PRODUCTS:
 
 
 
-CALLS = {'set_full_grid_view':20,
+CALLS = {'set_piano_view':50,
+	 	'set_mira_id': 42,
+		'set_mira_address':41,
+		'set_mira_view':40,
+		'set_skin_view':30,
+	 	'set_full_grid_view':20,
 	 	'enable_button_mpe':10,
 		'text_to_button':0,
 		'name_text_to_dial':1,

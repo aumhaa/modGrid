@@ -5,6 +5,12 @@ from ableton.v2.control_surface.components import ItemProvider
 from ableton.v2.control_surface.control import ButtonControl, control_list
 from Push2.item_lister import ItemListerComponent
 
+
+
+LOCAL_DEBUG = False
+debug = initialize_debug(local_debug=LOCAL_DEBUG)
+
+
 class BankProvider(ItemProvider):
 
 	def __init__(self, bank_registry=None, banking_info=None, *a, **k):

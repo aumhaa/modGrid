@@ -40,6 +40,7 @@ from ableton.v2.control_surface.device_parameter_bank import DeviceParameterBank
 from ableton.v2.control_surface.control import control_list
 from ableton.v2.control_surface.components.toggle import ToggleComponent
 from ableton.v2.control_surface.mode import *
+from ableton.v2.control_surface.components.scroll import *
 from ableton.v2.control_surface import CompoundElement
 from ableton.v2.control_surface.control import MatrixControl
 from ableton.v2.control_surface import midi
@@ -50,6 +51,7 @@ from ableton.v2.control_surface import midi
 from Push2.track_selection import *
 from Push2.device_parameter_bank_with_options import DescribedDeviceParameterBankWithOptions
 from Push2.master_track import MasterTrackComponent
+from pushbase.actions import DeleteComponent
 from pushbase.grid_resolution import GridResolution
 from pushbase.colors import LIVE_COLORS_TO_MIDI_VALUES, RGB_COLOR_TABLE
 
@@ -97,8 +99,9 @@ from .launchpad_mod import _Launchpad_setup_mod
 from _Generic.Devices import *
 from .Map import *
 
+LOCAL_DEBUG = False
 
-debug = initialize_debug()
+debug = initialize_debug(local_debug=LOCAL_DEBUG)
 
 DEVICE_COMPONENTS = ['device_0', 'device_1']
 LENGTH_VALUES = [2, 3, 4]
@@ -334,6 +337,9 @@ class ModGridFixedLengthSessionRecordingComponent(FixedLengthSessionRecordingCom
 	def automation_button(self, is_toggled, button):
 		self.song.session_automation_record = is_toggled
 
+	def _jump_to_next_slot(self, track, start_index):
+		super(ModGridFixedLengthSessionRecordingComponent, self)._jump_to_next_slot(track, start_index)
+		self._start_recording()
 
 class ModGridUndoRedoComponent(UndoRedoComponent):
 	undo_button = DisplayingButtonControl(text="Undo")
@@ -341,7 +347,7 @@ class ModGridUndoRedoComponent(UndoRedoComponent):
 
 	@undo_button.pressed
 	def undo_button(self, button):
-		debug('undo')
+		# debug('undo')
 		self._undo()
 
 	@redo_button.pressed
@@ -513,7 +519,7 @@ class SpecialMonoButtonElement(ButtonElement):
 	def set_text(self, text = ''):
 		# debug('button.set_text:', text)
 		# self._text = text.encode('utf-8', 'ignore')
-		self._text = text
+		self._text = str(text)
 		if not self._display is None:
 			self._display.display_message(self._text)
 		self.notify_text(self._text)
@@ -591,8 +597,6 @@ class SpecialMPEMonoButtonElement(SpecialMonoButtonElement):
 		# self._request_rebuild()
 		# if checkpad(self):
 		# 	debug('use_default_message', self.name)
-
-
 
 	def set_mpe_enabled(self, value = False):
 		# if checkpad(self): 
@@ -1999,12 +2003,14 @@ class ModGridModHandler(ModHandler):
 	Shift_button = DisplayingButtonControl(text='Shift')
 	Alt_button = DisplayingButtonControl(text='Alt')
 	_name = 'ModGridModHandler'
+	SPECIAL_MODE_NAMES = ['none', 'skin']
 
 	def __init__(self, *a, **k):
 		self._color_type = 'Push'
 		self._grid = None
 		addresses = {'key_text': {'obj':TextArray('key_text', 8), 'method':self._receive_key_text},
 					'grid_text': {'obj':TextGrid('grid_text', 16, 16), 'method':self._receive_grid_text}}
+		self._special_mode_index = 0
 		super(ModGridModHandler, self).__init__(addresses = addresses, *a, **k)
 		self.nav_box = ModGridNavigationBox(self, 16, 16, 16, 16, self.set_offset,)
 		# self._push_colors = list(range(128))
@@ -2017,9 +2023,64 @@ class ModGridModHandler(ModHandler):
 		# self._push_colors.insert(0, 0)
 
 
+	@listenable_property
+	def mira_address(self):
+		
+		return self.active_mod().mira_address if not self.active_mod() is None else None
+
+
+	@listenable_property
+	def mira_view(self):
+		return self.active_mod().mira_view if not self.active_mod() is None else False
+
+
+	@listenable_property
+	def mira_id(self):
+		return self.active_mod().mira_id if not self.active_mod() is None else 0
+
+
+	@listens('mira_address')
+	def _on_mira_address_changed(self, *a, **k):
+		debug('_on_mira_address_changed()')
+		self.notify_mira_address(self.mira_address)
+
+
+	@listens('mira_view')
+	def _on_mira_view_changed(self, *a, **k):
+		debug('_on_mira_view_changed()')
+		self.notify_mira_view(self.mira_view)
+
+
+	@listens('mira_id')
+	def _on_mira_id_changed(self, *a, **k):
+		debug('_on_mira_id_changed()')
+		self.notify_mira_id(self.mira_id)
+
+
+	@listenable_property
+	def special_mode_index(self):
+		return self._special_mode_index
+
+
+	def _update_special_mode_index(self):
+		new_mode = 0
+		mod = self.active_mod()
+		# debug('_update_special_mode_index', mod, mod.name if hasattr(mod, 'name') else False, mod.name in self.SPECIAL_MODE_NAMES)
+		if mod and hasattr(mod, 'name') and mod.name in self.SPECIAL_MODE_NAMES:
+			new_mode = self.SPECIAL_MODE_NAMES.index(mod.name)
+			debug('new_mode:', new_mode)
+		if new_mode != self._special_mode_index:
+			self._special_mode_index = new_mode
+			self.notify_special_mode_index(new_mode)
+
+
 	def select_mod(self, mod):
 		super(ModGridModHandler, self).select_mod(mod)
 		#self._script._select_note_mode()
+		self._update_special_mode_index()
+		self._on_mira_address_changed.subject = mod
+		self._on_mira_view_changed.subject = mod
+		self._on_mira_id_changed.subject = mod
 		self.update()
 		#debug('modhandler select mod: ' + str(mod))
 
@@ -2052,14 +2113,14 @@ class ModGridModHandler(ModHandler):
 				except:
 					pass
 				button = self._grid_value.subject.get_button(y, x)
-				# if button:
-				# 	new_identifier = identifier if identifier > -1 else button._original_identifier
-				# 	new_channel = channel if channel > -1 else button._original_channel
-				# 	button._msg_identifier != new_identifier and button.set_identifier(new_identifier)
-				# 	button._msg_channel != new_channel and button.set_channel(new_channel)
-				# 	button._report_input = True
-				# 	# button.set_enabled((channel, identifier) == (-1, -1))
-				# 	button.script_forwarding = ScriptForwarding.none if (channel, identifier) == (-1, -1) else ScriptForwarding.exclusive
+				if button:
+					new_identifier = identifier if identifier > -1 else button._original_identifier
+					new_channel = channel if channel > -1 else button._original_channel
+					button._msg_identifier != new_identifier and button.set_identifier(new_identifier)
+					button._msg_channel != new_channel and button.set_channel(new_channel)
+					button._report_input = True
+					# button.set_enabled((channel, identifier) == (-1, -1))
+					button.script_forwarding = ScriptForwarding.exclusive if (channel, identifier) == (-1, -1) else ScriptForwarding.non_consuming
 
 
 	def _receive_grid_text(self, x, y, value = '', *a, **k):
@@ -2165,6 +2226,17 @@ class ModGridModHandler(ModHandler):
 					button.suppress_script_forwarding = False  #should be false to conform with original, but that really makes no sense. 
 			if not self._keys_value.subject is None:
 				self._keys_value.subject.reset()
+
+	def update(self, *a, **k):
+		super(ModGridModHandler, self).update()
+		self.notify_mira_address()
+		self.notify_mira_view()
+		self.notify_mira_id()
+		# self._script.update_mod_special_mode()
+
+
+	def update_buttons(self):
+		pass
 
 
 class ModGridNavigationBox(NavigationBox):
@@ -2397,6 +2469,81 @@ class SpecialBicoloredMomentaryBehaviour(BicoloredMomentaryBehaviour):
 		super(SpecialBicoloredMomentaryBehaviour, self).press_immediate(*a, **k)
 
 
+class ModGridKeysGroup(PlayableComponent, ScrollComponent, Scrollable):
+
+	_position = 5
+	_channel_offset = 0
+	_hi_limit = 9
+	TRANSLATION_CHANNEL = 15
+	matrix = control_matrix(MPEPlayableControl)
+
+
+	def __init__(self, translation_channel = 0, *a, **k):
+		self._translation_channel = translation_channel
+		super(ModGridKeysGroup, self).__init__(*a, **k)
+
+
+	@listenable_property
+	def view_is_enabled(self):
+		return self.is_enabled()
+
+
+	@listenable_property
+	def position(self):
+		return self._position
+
+
+	@position.setter
+	def position(self, index):
+		assert(0 <= index <= 28)
+		self._position = index
+		#self.notify_position()
+
+
+	def can_scroll_up(self):
+		return self._position < self._hi_limit
+
+
+	def can_scroll_down(self):
+		return self._position > 1
+
+
+	def scroll_up(self):
+		self.position = self.position + 1
+		self._update_note_translations()
+
+
+	def scroll_down(self):
+		self.position = self.position - 1
+		self._update_note_translations()
+
+
+	def _get_current_channel(self):
+		return self.TRANSLATION_CHANNEL
+
+
+	def _note_translation_for_button(self, button):
+		note = button.identifier
+		channel = self.TRANSLATION_CHANNEL
+		#we are shifting the channel forward so that this button won't interfere with other buttons that aren't being translated
+		if button._control_element:
+			note = button._control_element.original_identifier() + (self.position * 12)
+			channel = button._control_element._original_channel+1
+			# debug('channel is:', channel)
+		return ( note, channel)
+
+	def _update_button_color(self, button):
+		if not button._control_element is None and hasattr(button._control_element, 'original_identifier'):
+			note = button._control_element.original_identifier()
+			button.color = 1 if note%12 in WHITEKEYS else 0
+			if button._control_element:
+				button._control_element.scale_color = button.color
+
+	def update(self, *a, **k):
+		super(ModGridKeysGroup, self).update(*a, **k)
+		self.notify_view_is_enabled()
+
+
 class ModGrid(ControlSurface):
 
 
@@ -2412,6 +2559,7 @@ class ModGrid(ControlSurface):
 	monomodular = None
 	device_provider_class = ModDeviceProvider
 	bank_definitions = BANK_DEFINITIONS
+	_translation_table = ascii_translations
 
 	def __init__(self, *a, **k):
 		super(ModGrid, self).__init__(*a, **k)
@@ -2424,6 +2572,7 @@ class ModGrid(ControlSurface):
 			self._setup_sysex()
 			self._setup_controls()
 			self._setup_background()
+			self._setup_delete()
 			self._setup_autoarm()
 			self._setup_session_control()
 			self._setup_mixer_control()
@@ -2439,9 +2588,15 @@ class ModGrid(ControlSurface):
 			# self._setup_preset_tagger()
 			self._setup_audiolooper()
 			self._setup_instrument()
+			self._setup_piano()
 			self._setup_main_modes()
 			self._initialize_script()
 		self._on_device_changed.subject = self._device_provider
+		self._update_mod_special_mode.subject = self.modhandler
+		self._update_mira_address.subject = self.modhandler
+		self._update_mira_view.subject = self.modhandler
+		self._update_mira_id.subject = self.modhandler
+		self._update_piano_view.subject = self._piano_group
 		self.schedule_message(1, self._open_log)
 
 
@@ -2512,6 +2667,7 @@ class ModGrid(ControlSurface):
 		self._pad = [SpecialMPEMonoButtonElement(is_momentary = is_momentary, msg_type = MIDI_NOTE_TYPE, channel = 1 if index < 128 else 8, identifier = index%128, name = 'Pad_' + str(index), script = self, monobridge = self._monobridge, skin = self._skin, color_map = COLOR_MAP, optimized_send_midi = optimized, resource_type = resource) for index in range(256)]
 		self._matrix = ButtonMatrixElement(name = 'Matrix', rows = [self._pad[(index*16):(index*16)+16] for index in range(16)])
 		self._8x8_matrix = ButtonMatrixElement(name = "8x8Matrix", rows = [self._pad[(index*16):(index*16)+8] for index in range(8)])
+		self._piano_matrix = ButtonMatrixElement(name = "PianoMatrix", rows = [self._pad[0:25]])
 
 		self._key = [SpecialMonoButtonElement(is_momentary = is_momentary, msg_type = MIDI_NOTE_TYPE, channel = main_chan, identifier = index, name = 'Key_' + str(index), script = self, monobridge = self._monobridge, skin = self._skin, color_map = COLOR_MAP, optimized_send_midi = optimized, resource_type = resource) for index in range(8)]
 		self._key_matrix = ButtonMatrixElement(name = 'KeyMatrix', rows = [self._key])
@@ -2590,6 +2746,16 @@ class ModGrid(ControlSurface):
 		self._background.set_enabled(False)
 
 
+	def _setup_delete(self):
+		self._delete_component = DeleteComponent(name='Deleter')
+		self._delete_component.layer = Layer(priority=6, delete_button=self._delete_button)
+        # self._delete_default_component = DeleteAndReturnToDefaultComponent(name='DeleteAndDefault')
+        # self._delete_default_component.layer = Layer(delete_button='delete_button')
+        # self._delete_clip = DeleteSelectedClipComponent(name='Selected_Clip_Deleter')
+        # self._delete_clip.layer = Layer(action_button='delete_button')
+        # self._delete_scene = DeleteSelectedSceneComponent(name='Selected_Scene_Deleter')
+        # self._delete_scene.layer = Layer(action_button=(self._with_shift('delete_button')))
+
 	def _setup_autoarm(self):
 		self._autoarm = UtilAutoArmComponent(name='Auto_Arm')
 		# self._autoarm.layer = Layer(priority = 6, util_autoarm_toggle_button = self._pad[16])
@@ -2616,11 +2782,12 @@ class ModGrid(ControlSurface):
 
 		self._session = UtilSessionComponent(session_ring = self._session_ring, auto_name = True)
 		self._session.set_rgb_mode(LIVE_COLORS_TO_MIDI_VALUES, RGB_COLOR_TABLE, clip_slots_only=True)
-		self._session.layer = Layer(priority = 6, 
+		self._session.launch_layer = AddLayerMode(self._session, Layer(priority = 6, 
 			clip_launch_buttons = self._8x8_matrix, 
-			clip_stop_buttons = self._shifted_chain_select_matrix, 
+			clip_stop_buttons = self._shifted_chain_select_matrix))
+		self._session.delete_layer = AddLayerMode(self._session, Layer(priority = 6,
 			managed_delete_button = self._delete_button,
-			managed_duplicate_button = self._with_shift_latch(self._with_text(self._delete_button, 'Duplicate')))
+			managed_duplicate_button = self._with_alt_latch(self._with_text(self._button[7], 'Duplicate'))))
 		self._session.scene_layer = AddLayerMode(self._session, Layer(priority = 6,
 			scene_launch_buttons = self._shifted_left_matrix))
 		# self._session.layer = Layer(util_fire_next_button = self._button[3],
@@ -2761,10 +2928,10 @@ class ModGrid(ControlSurface):
 		self._device_navigation = UtilDeviceNavigationComponent(device_bank_registry = self._device_bank_registry,
 																banking_info = self._banking_info,
 																device_component = self._parameter_provider,
-																track_list_component = self._track_list_component)
-		self._device_navigation.layer = Layer(priority = 6, select_buttons = self._device_select_matrix,)
-																	#select_button_displays = self._device_select_display_matrix,)
-																	# disable_button = self._button[39])
+																track_list_component = self._track_list_component,
+																delete_handler = self._delete_component)
+		self._device_navigation.layer = Layer(priority = 6, 
+			select_buttons = self._device_select_matrix,)
 		self._device_navigation.scroll_left_layer = Layer(button = self._with_text(self._button[88], '<-'), priority = 8)
 		self._device_navigation.scroll_right_layer = Layer(button = self._with_text(self._button[95], '->'), priority = 8)
 		self._device_navigation.chain_selection.layer = Layer(select_buttons = self._chain_select_matrix, priority = 6)
@@ -2783,7 +2950,7 @@ class ModGrid(ControlSurface):
 
 	def _setup_device_deleter(self):
 		self._device_deleter = DeviceDeleteComponent(device_provider = self._device_provider)
-		self._device_deleter.layer = Layer(priority = 6, delete_button = self._button[39])
+		# self._device_deleter.layer = Layer(priority = 6, delete_button = self._button[39])
 
 
 	def _setup_hotswap(self):
@@ -2898,8 +3065,18 @@ class ModGrid(ControlSurface):
 		# self._instrument._main_modes.add_mode('keypad_split_shifted', [self._instrument._keypad, self._instrument._keypad.split_select_layer, self._instrument.keypad_options_layer, self._instrument._keypad.octave_toggle_layer, self._instrument._selected_session, self._instrument._selected_session._keys_layer])
 		self._instrument._main_modes.add_mode('keypad_sequencer_shifted', [self._instrument._keypad, self._instrument._keypad.split_select_layer, self._instrument._keypad.sequencer_shift_layer, self._instrument.keypad_options_layer, self._instrument._keypad.octave_toggle_layer])
 		self._instrument._main_modes.add_mode('audioloop', [self._instrument.audioloop_layer])
-		#self._instrument.register_component(self._instrument._main_modes)
 		self._instrument.set_enabled(False)
+
+
+	def _setup_piano(self):
+		self._piano_group = ModGridKeysGroup()
+		self._piano_group._hi_limit = 8
+		self._piano_group.layer = Layer(priority = 6,
+			matrix = self._piano_matrix, 
+			scroll_up_button = self._with_text(self._button[99], 'Octave->'), 
+			scroll_down_button = self._with_text(self._button[98], '<-Octave'))
+		#self._piano_group.shift_layer = AddLayerMode(self._piano_group, Layer(matrix = self._piano_shift_matrix, scroll_up_button = self._pian0[12], scroll_down_button = self._key[11]))
+		self._piano_group.set_enabled(False)
 
 
 	def _setup_main_modes(self):
@@ -2907,9 +3084,10 @@ class ModGrid(ControlSurface):
 
 		self._modswitcher = ModesComponent(name = 'ModSwitcher')
 		self._modswitcher.add_mode('disabled', [])
-		self._modswitcher.add_mode('mod', [self.modhandler])
+		self._modswitcher.add_mode('mod', [self.modhandler, ])
 		# self._modswitcher.add_mode('audiolooper', [self._audiolooper])
 		self._modswitcher.add_mode('instrument', [self._instrument])
+		self._modswitcher.add_mode('piano', [self._piano_group])
 		self._modswitcher.selected_mode = 'disabled'
 		self._modswitcher.set_enabled(False)
 
@@ -2960,10 +3138,18 @@ class ModGrid(ControlSurface):
 
 		#manages different modes that grid can be used for
 		self._grid_modes = ModesComponent(name = 'GridModes')
-		self._grid_modes.add_mode('Instrument', [self._modswitcher,])
-		self._grid_modes.add_mode('Session', [self._session, self._session.scene_layer])
-		self._grid_modes.selected_mode = 'Session'
-		self._grid_modes.layer = Layer(priority = 6, Instrument_button = self._button[28], Session_button = self._button[29])
+		self._grid_modes.add_mode('Piano', [self._piano_group, self._session, self._session.delete_layer])
+		self._grid_modes.add_mode('Instrument', [self._modswitcher, self._session, self._session.delete_layer, partial(self._update_mod_special_mode, True)])
+		self._grid_modes.add_mode('Session', [self._session, 
+			self._session.launch_layer,
+			 self._session.delete_layer, 
+			 self._session.scene_layer, 
+			 self._reset_mod_special_mode])
+		self._grid_modes.selected_mode = 'Instrument'
+		self._grid_modes.layer = Layer(priority = 6, 
+			Instrument_button = self._with_text(self._button[28], 'Instrument'),
+			Session_button = self._with_text(self._button[29], 'Session'), 
+			Piano_button = self._with_alt_latch(control=self._button[28], text='Piano'))
 		self._button[28]._display.set_data_sources([DisplayDataSource("Instrument")])
 		self._button[29]._display.set_data_sources([DisplayDataSource("Session")])
 		self._grid_modes.set_enabled(False)
@@ -3060,7 +3246,7 @@ class ModGrid(ControlSurface):
 		# with inject(register_component = const(self._register_component), song = const(self.song)).everywhere():
 		self.modhandler = ModGridModHandler(self) ## song = self.song, register_component = self._register_component)
 		self.modhandler.name = 'ModHandler'
-		self.modhandler.layer = Layer( priority = 5, grid = self._matrix,
+		self.modhandler.layer = Layer( priority = 6, grid = self._matrix,
 																			Shift_button = self._shift,
 																			Alt_button = self._alt,
 																			key_buttons = self._chain_select_matrix,)
@@ -3253,7 +3439,60 @@ class ModGrid(ControlSurface):
 			# self._modswitcher.selected_mode = 'audiolooper'
 			if not self._modswitcher.selected_mode == 'instrument':
 				self._modswitcher.selected_mode = 'instrument'
+		# self._update_mod_special_mode(mode = self.modhandler.special_mode_index)
 
+	@listens('special_mode_index')
+	def _update_mod_special_mode(self, mode=0, force=False, *a):
+		mode = self.modhandler.special_mode_index
+		if force or self._grid_modes.selected_mode is 'Instrument':
+			self._sysex.send('set_skin_view', [mode, mode, mode])
+		# debug('update_mod_special_mode', mode)
+
+
+	def _translate_char(self, char_to_translate):
+		result = 63
+		if char_to_translate in self._translation_table.keys():
+			result = self._translation_table[char_to_translate]
+		else:
+			result = self._translation_table['?']
+		return result
+
+	def _translate_string(self, string):
+		return list(map(self._translate_char, string))
+
+	@listens('mira_address')
+	def _update_mira_address(self, *a, **k):
+		address = self.modhandler.mira_address
+		debug('ModGrid._update_mira_address:', address)
+		if not address is None:
+			self._sysex.send('set_mira_address', [0, 0] + self._translate_string(address))
+
+	@listens('mira_view')
+	def _update_mira_view(self, *a, **k):
+		value = self.modhandler.mira_view if (self._modswitcher.selected_mode == 'mod' and self._grid_modes.selected_mode == 'Instrument') else False
+		debug('ModGrid._update_mira_view:', value)
+		val = 1 if value else 0
+		self._sysex.send('set_mira_view', [val, val, val])
+
+	@listens('mira_id')
+	def _update_mira_id(self, *a, **k):
+		value = self.modhandler.mira_id
+		debug('ModGrid._update_mira_id:', value)
+		if not value is None:
+			value = int(value)
+			self._sysex.send('set_mira_id', [value, value, value])
+
+	@listens('view_is_enabled')
+	def _update_piano_view(self, *a, **k):
+		value = self._piano_group.view_is_enabled
+		val = 1 if value else 0
+		if not value is None:
+			value = int(value)
+			self._sysex.send('set_piano_view', [value, value, value])
+
+	def _reset_mod_special_mode(self, *a):
+		self._sysex.send('set_skin_view', [0, 0, 0])
+		self._sysex.send('set_mira_view', [0, 0, 0])
 
 	# def _send_instrument_shifted(self):
 	# 	# self._instrument.is_enabled() and self._instrument._on_shift_value(1)

@@ -1758,7 +1758,10 @@ class ModClient(NotifyingControlElement):
 		self._translations = {}
 		self._translation_groups = {}
 		self._color_maps = {}
-		self.legacy = False
+		self._legacy = False
+		self._mira_view = False
+		self._mira_address = None
+		self._mira_id = None
 		self._device_proxy = LegacyModDeviceProxy(parent = self, mod_device = device)
 		self._proxied_devices = [self._device_proxy]
 		self.register_addresses()
@@ -1775,6 +1778,24 @@ class ModClient(NotifyingControlElement):
 	@property
 	def device(self):
 		return self._device
+
+
+	@listenable_property
+	def legacy(self):
+		return self._legacy
+
+	@listenable_property
+	def mira_view(self):
+		return self._mira_view
+
+	@listenable_property
+	def mira_id(self):
+		return self._mira_id
+
+
+	@listenable_property
+	def mira_address(self):
+		return self._mira_address
 
 
 	def register_addresses(self):
@@ -1984,9 +2005,28 @@ class ModClient(NotifyingControlElement):
 
 	def set_legacy(self, value):
 		debug('set_legacy: ' + str(value))
-		self.legacy = value > 0
+		self._legacy = value > 0
+		self.notify_legacy(self.legacy)
 		for handler in self.active_handlers():
 			handler.update()
+
+
+	def set_mira_view(self, value = False, *a, **k):
+		debug('set_mira_view:', value)
+		self._mira_view = bool(value)
+		self.notify_mira_view(self.mira_view)
+	
+
+	def set_mira_address(self, address, *a, **k):
+		debug('set_mira_address: ' + str(address))
+		self._mira_address = str(address)
+		self.notify_mira_address(self.mira_address)
+
+
+	def set_mira_id(self, id = None, *a, **k):
+		debug('set_mira_id:', id)
+		self._mira_id = str(id)
+		self.notify_mira_id(self.mira_id)
 
 
 	def set_name(self, name):

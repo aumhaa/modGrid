@@ -5,6 +5,12 @@ from ableton.v2.control_surface.components import ItemProvider
 from Push2.colors import DISPLAY_BUTTON_SHADE_LEVEL, IndexedColor
 from Push2.item_lister import ItemListerComponent
 
+
+
+LOCAL_DEBUG = False
+debug = initialize_debug(local_debug=LOCAL_DEBUG)
+
+
 class ChainProvider(ItemProvider):
 
 	def __init__(self, *a, **k):
