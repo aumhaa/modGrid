@@ -2130,7 +2130,7 @@ class ModGridModHandler(ModHandler):
 			if mod.legacy:
 				x = x-self.x_offset
 				y = y-self.y_offset
-			if x in range(8) and y in range(4):
+			if x in range(16) and y in range(16):
 				button = self._grid_value.subject.get_button(y, x)
 				if button:
 					# debug('setting button')
