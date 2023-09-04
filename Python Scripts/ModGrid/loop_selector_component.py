@@ -16,7 +16,7 @@ from pushbase.consts import MessageBoxText
 from pushbase.message_box_component import Messenger
 from pushbase.pad_control import PadControl
 
-from aumhaa.v2.base.debug import initialize_debug
+from aumhaa.v3.base.debug import initialize_debug
 
 debug = initialize_debug()
 

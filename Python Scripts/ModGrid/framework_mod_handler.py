@@ -15,18 +15,19 @@ from _Framework.Task import *
 from _Framework.SubjectSlot import subject_slot, subject_slot_group, SlotManager
 from _Framework.ScrollComponent import *
 
-from aumhaa.v2.base.debug import initialize_debug
+from aumhaa.v3.base.debug import initialize_debug
 
 # from ableton.v2.control_surface import ControlSurface as ControlSurface_v2
 
-from aumhaa.v2.control_surface.mod import *
+from aumhaa.v3.control_surface.mod import *
 
 INITIAL_SCROLLING_DELAY = 5
 INTERVAL_SCROLLING_DELAY = 1
 
 CS_LIST_KEY = 'control_surfaces'
 
-debug = initialize_debug()
+LOCAL_DEBUG=False
+debug = initialize_debug(local_debug=LOCAL_DEBUG)
 
 
 class FrameworkModHandler(CompoundComponent):

@@ -2,7 +2,7 @@
 import Live
 from ableton.v2.base import listenable_property, listens, liveobj_changed, liveobj_valid, EventObject
 
-from aumhaa.v2.base.debug import initialize_debug
+from aumhaa.v3.base.debug import initialize_debug
 
 LOCAL_DEBUG=False
 debug = initialize_debug(local_debug=LOCAL_DEBUG)

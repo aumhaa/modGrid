@@ -15,8 +15,8 @@ from _Framework.ModesComponent import AddLayerMode
 from _Framework.SubjectSlot import SlotManager
 from _Framework.Control import ButtonControl
 from _Framework.ModesComponent import tomode
-from aumhaa.v2.control_surface.mod import *
-from aumhaa.v2.base.debug import initialize_debug
+from aumhaa.v3.control_surface.mod import *
+from aumhaa.v3.base.debug import initialize_debug
 from Launchpad_MK2 import Launchpad_MK2
 
 debug = initialize_debug()

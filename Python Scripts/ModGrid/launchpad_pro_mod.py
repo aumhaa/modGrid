@@ -16,8 +16,8 @@ from _Framework.ModesComponent import AddLayerMode, DelayMode
 from _Framework.SubjectSlot import SlotManager
 from _Framework.Control import ButtonControl
 from _Framework.ModesComponent import tomode, CompoundMode
-from aumhaa.v2.control_surface.mod import *
-from aumhaa.v2.base.debug import initialize_debug
+from aumhaa.v3.control_surface.mod import *
+from aumhaa.v3.base.debug import initialize_debug
 from ableton.v2.base.util import nop
 from Launchpad_Pro.Launchpad_Pro import Launchpad_Pro
 from Launchpad_Pro import consts

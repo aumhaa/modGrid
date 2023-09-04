@@ -17,8 +17,8 @@ from _Framework.SubjectSlot import SlotManager
 from _Framework.Control import ButtonControl
 from _Framework.ButtonMatrixElement import ButtonMatrixElement
 from ableton.v2.base.util import nop
-from aumhaa.v2.control_surface.mod import *
-from aumhaa.v2.base.debug import initialize_debug
+from aumhaa.v3.control_surface.mod import *
+from aumhaa.v3.base.debug import initialize_debug
 
 from Launchpad.MainSelectorComponent import *
 from Launchpad.Launchpad import Launchpad

@@ -23,8 +23,8 @@ from Push2.item_lister import IconItemSlot, ItemListerComponent
 
 # from Push2.device_navigation import singledispatchmethod
 
-# from aumhaa.v2.base.debug import log_flattened_arguments
-from aumhaa.v2.base import initialize_debug
+# from aumhaa.v3.base.debug import log_flattened_arguments
+from aumhaa.v3.base import initialize_debug
 
 # if PY3:
 # 	from functools import singledispatch

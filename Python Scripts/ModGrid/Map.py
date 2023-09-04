@@ -3,7 +3,7 @@
 
 
 from ableton.v2.control_surface.elements.color import Color
-from aumhaa.v2.livid.colors import *
+from aumhaa.v3.livid.colors import *
 
 MAIN_CONTROL_CHANNEL = 0
 # CHANNEL = 3
@@ -202,214 +202,362 @@ DEFAULT_INSTRUMENT_SETTINGS = {'Scales':SCALES,
 								'DefaultMode':DEFAULT_MODE,
 								'Channels':CHANNELS}
 
+# class ModGridRGB:
+
+# 	OFF = MonoColor(0)
+# 	WHITE = MonoColor(1)
+# 	YELLOW = MonoColor(2)
+# 	CYAN = MonoColor(3)
+# 	MAGENTA = MonoColor(4)
+# 	RED = MonoColor(5)
+# 	GREEN = MonoColor(6)
+# 	BLUE = MonoColor(7)
+
+class FlashingColor(Color):
+
+
+	def __init__(self, flash_color = 1, unflash_color = 0, *a, **k):
+		self._flash_color = flash_color
+		self._unflash_color = unflash_color
+		super(FlashingColor, self).__init__(*a, **k)
+
+
+	def draw(self, interface):
+		try:
+			interface._animation_handler.add_interface(interface, [self._flash_color, self._unflash_color])
+		except:
+			pass
+		super(FlashingColor, self).draw(interface)
+
+
+class ModGridRGB:
+	OFF = MonoColor(0)
+	BLACK = MonoColor(0)
+	GREY = MonoColor(70)
+	DARK_GREY = MonoColor(117)
+	WHITE = MonoColor(1)
+	YELLOW = MonoColor(2)
+	DARK_YELLOW = MonoColor(14)
+	CYAN = MonoColor(3)
+	DARK_CYAN = MonoColor(38)
+	MAGENTA = MonoColor(4)
+	DARK_MAGENTA = MonoColor(54)
+	RED = MonoColor(5)
+	DARK_RED = MonoColor(10)
+	GREEN = MonoColor(6)
+	DARK_GREEN = MonoColor(22)
+	BLUE = MonoColor(7)
+	DARK_BLUE = MonoColor(46)
+	ORANGE = MonoColor(96)
+	DARK_ORANGE = MonoColor(126)
+	PURPLE = MonoColor(49)
+	DARK_PURPLE = MonoColor(93)
+
+	SALMON = MonoColor(8)
+	CANARY = MonoColor(12)
+	LIME = MonoColor(17)
+	SPRING = MonoColor(25)
+	TURQUOISE = MonoColor(29)
+	SKY = MonoColor(37)
+	OCEAN = MonoColor(41)
+	ORCHID = MonoColor(49)
+	PINK = MonoColor(52)
+	FUSCIA = MonoColor(56)
+
+	FLASHING_WHITE = FlashingColor(1, 70)
+	FLASHING_GREEN = FlashingColor(6, 22)
+	FLASHING_YELLOW = FlashingColor(2, 14)
+	FLASHING_CYAN = FlashingColor(3, 38)
+	FLASHING_MAGENTA = FlashingColor(4, 54)
+	FLASHING_RED = FlashingColor(5, 10)
+	FLASHING_BLUE = FlashingColor(7, 46)
+	FLASHING_ORANGE = FlashingColor(96, 126)
+	FLASHING_PURPLE = FlashingColor(49, 93)
+
+
+
+
+
+
+
+
+
+
 
 
 class UtilColors:
 
 	class MainModes:
-		Main = LividRGB.OFF
-		Main_shifted = LividRGB.WHITE
-		Full = LividRGB.OFF
-		Full_shifted = LividRGB.WHITE
-
+		Main = ModGridRGB.OFF
+		Main_shifted = ModGridRGB.WHITE
+		Full = ModGridRGB.OFF
+		Full_shifted = ModGridRGB.WHITE
 
 	class Option:
-		Selected = LividRGB.WHITE
-		Unselected = LividRGB.CYAN
-		On = LividRGB.WHITE
-		Off = LividRGB.BLUE
-		Unused = LividRGB.OFF
+		Selected = ModGridRGB.WHITE
+		Unselected = ModGridRGB.CYAN
+		On = ModGridRGB.WHITE
+		Off = ModGridRGB.BLUE
+		Unused = ModGridRGB.OFF
 
 	class ItemNavigation:
-		ItemNotSelected = LividRGB.MAGENTA
-		ItemNotSelectedOff = LividRGB.OFF
-		ItemSelected = LividRGB.CYAN
-		ItemSelectedOff = LividRGB.WHITE
-		NoItem = LividRGB.OFF
+		ItemNotSelected = ModGridRGB.MAGENTA
+		ItemNotSelectedOff = ModGridRGB.DARK_MAGENTA
+		ItemSelected = ModGridRGB.WHITE
+		ItemSelectedOff = ModGridRGB.GREY
+		NoItem = ModGridRGB.OFF
 
 	class EditModeOptions:
-		ItemNotSelected = LividRGB.BLUE
-		ItemSelected = LividRGB.YELLOW
-		NoItem = LividRGB.OFF
+		ItemNotSelected = ModGridRGB.DARK_YELLOW
+		ItemSelected = ModGridRGB.YELLOW
+		NoItem = ModGridRGB.OFF
 
 	class DeviceNavigation:
-		ItemNotSelected = LividRGB.MAGENTA
-		ItemNotSelectedOff = LividRGB.OFF
-		ItemSelected = LividRGB.CYAN
-		ItemSelectedOff = LividRGB.WHITE
-		NoItem = LividRGB.OFF
+		ItemNotSelected = ModGridRGB.MAGENTA
+		ItemNotSelectedOff = ModGridRGB.DARK_MAGENTA
+		ItemSelected = ModGridRGB.CYAN
+		ItemSelectedOff = ModGridRGB.DARK_CYAN
+		NoItem = ModGridRGB.OFF
 
 	class BankSelection:
-		ItemNotSelected = LividRGB.MAGENTA
-		ItemSelected = LividRGB.CYAN
-		NoItem = LividRGB.OFF
+		ItemNotSelected = ModGridRGB.YELLOW
+		ItemSelected = ModGridRGB.DARK_YELLOW
+		NoItem = ModGridRGB.OFF
 
 
 	class ChainNavigation:
-		ItemNotSelected = LividRGB.GREEN
-		ItemSelected = LividRGB.RED
-		NoItem = LividRGB.OFF
+		ItemNotSelected = ModGridRGB.GREEN
+		ItemSelected = ModGridRGB.DARK_GREEN
+		NoItem = ModGridRGB.OFF
 
 
 	class ModeButtons:
-		Main = LividRGB.WHITE
-		Select = LividRGB.RED
-		Clips = LividRGB.GREEN
+		Main = ModGridRGB.WHITE
+		Select = ModGridRGB.RED
+		Clips = ModGridRGB.GREEN
+
+
+	class DefaultButton:
+		On = ModGridRGB.WHITE
+		Off = ModGridRGB.OFF
+		Disabled = ModGridRGB.OFF
+		Alert = ModGridRGB.RED
+		Transparent = ModGridRGB.GREY
+
+	class List:
+		ScrollerOn = ModGridRGB.GREEN
+		ScrollerOff = ModGridRGB.MAGENTA
+
+	class Session:
+		StopClipDisabled = ModGridRGB.OFF
+		StopClipTriggered = ModGridRGB.FLASHING_BLUE
+		StopClip = ModGridRGB.BLUE
+		Scene = ModGridRGB.CYAN
+		NoScene = ModGridRGB.OFF
+		SceneTriggered = ModGridRGB.GREEN
+		ClipTriggeredPlay = ModGridRGB.FLASHING_GREEN
+		ClipTriggeredRecord = ModGridRGB.FLASHING_RED
+		RecordButton = ModGridRGB.OFF
+		ClipEmpty = ModGridRGB.OFF
+		ClipStopped = ModGridRGB.WHITE
+		# ClipStarted = ModGridRGB.GREEN
+		ClipStarted = ModGridRGB.FLASHING_GREEN
+		ClipRecording = ModGridRGB.FLASHING_RED
+		NavigationButtonOn = ModGridRGB.CYAN
+		NavigationButtonOff = ModGridRGB.YELLOW
+		ZoomOn = ModGridRGB.WHITE
+		ZoomOff = ModGridRGB.WHITE
+		FireNextArm = ModGridRGB.RED
+		Delete = ModGridRGB.BLUE
+		DeletePressed = ModGridRGB.WHITE
+		Select = ModGridRGB.BLUE
+		SelectPressed = ModGridRGB.WHITE
+		Duplicate = Color(70)
+		DuplicatePressed = Color(80)
+
+	class Zooming:
+		Selected = ModGridRGB.YELLOW
+		Stopped = ModGridRGB.WHITE
+		Playing = ModGridRGB.GREEN
+		Empty = ModGridRGB.OFF
+
+
+	class LoopSelector:
+		Playhead = ModGridRGB.YELLOW
+		OutsideLoop = ModGridRGB.BLUE
+		InsideLoopStartBar = ModGridRGB.CYAN
+		SelectedPage = ModGridRGB.WHITE
+		InsideLoop = ModGridRGB.CYAN
+		PlayheadRecord = ModGridRGB.RED
+		Bank = ModGridRGB.MAGENTA
+		ShiftLoop = ModGridRGB.WHITE
+		LatestLoop = ModGridRGB.YELLOW
+
+
+	class Transport:
+		PlayOn = ModGridRGB.GREEN
+		PlayOff = ModGridRGB.DARK_GREEN
+		StopOn = ModGridRGB.GREY
+		StopOff = ModGridRGB.DARK_GREY
+		RecordOn = ModGridRGB.RED
+		RecordOff = ModGridRGB.DARK_RED
+		OverdubOn = ModGridRGB.MAGENTA
+		OverdubOff = ModGridRGB.DARK_MAGENTA
+		SeekBackwardOn = ModGridRGB.CYAN
+		SeekBackwardOff = ModGridRGB.CYAN
+		LoopOn = ModGridRGB.YELLOW
+		LoopOff = ModGridRGB.DARK_YELLOW
+		MetroOn = ModGridRGB.CYAN
+		MetroOff = ModGridRGB.DARK_CYAN
+
+	class Auto_Arm:
+		Enabled = ModGridRGB.RED
+		Disabled = ModGridRGB.DARK_RED
+
+	class DeviceSelector:
+		AssignOn = ModGridRGB.GREEN
+		AssignOff = ModGridRGB.DARK_GREEN
+
+	class Mixer:
+		SoloOn = ModGridRGB.BLUE
+		SoloOff = ModGridRGB.DARK_BLUE
+		MuteOn = ModGridRGB.YELLOW
+		MuteOff = ModGridRGB.DARK_YELLOW
+		ArmSelected = ModGridRGB.RED
+		ArmSelectedImplicit = ModGridRGB.PINK
+		ArmUnselected = ModGridRGB.RED
+		ArmOff = ModGridRGB.DARK_RED
+		StopClip = ModGridRGB.GREY
+		SelectedOn = ModGridRGB.WHITE
+		SelectedOff = ModGridRGB.DARK_GREY
+		ArmOn = ModGridRGB.RED
+
+	class MasterTrack:
+		On = ModGridRGB.RED
+		Off = ModGridRGB.DARK_GREY
+
+
+	class Recording:
+		On = ModGridRGB.RED
+		Transition = ModGridRGB.PURPLE
+		Off = ModGridRGB.DARK_RED
+
+
+	class Automation:
+		On = ModGridRGB.ORANGE
+		Off = ModGridRGB.DARK_ORANGE
+
+
+	class Recorder:
+		On = ModGridRGB.WHITE
+		Off = ModGridRGB.GREY
+		NewOn = ModGridRGB.YELLOW
+		NewOff = ModGridRGB.DARK_YELLOW
+		FixedOn = ModGridRGB.CYAN
+		FixedOff = ModGridRGB.DARK_CYAN
+		RecordOn = ModGridRGB.MAGENTA
+		RecordOff = ModGridRGB.DARK_MAGENTA
+		AutomationOn = ModGridRGB.ORANGE
+		AutomationOff = ModGridRGB.DARK_ORANGE
+		FixedAssigned = ModGridRGB.MAGENTA
+		FixedNotAssigned = ModGridRGB.DARK_MAGENTA
+
+
+	class Device:
+		NavOn = ModGridRGB.MAGENTA
+		NavOff = ModGridRGB.DARK_MAGENTA
+		BankOn = ModGridRGB.YELLOW
+		BankOff = ModGridRGB.DARK_YELLOW
+		ChainNavOn = ModGridRGB.RED
+		ChainNavOff = ModGridRGB.DARK_RED
+		ContainNavOn = ModGridRGB.CYAN
+		ContainNavOff = ModGridRGB.DARK_CYAN
+
+
+	class NoteEditor:
+
+
+		class Step:
+			Low = ModGridRGB.CYAN
+			High = ModGridRGB.WHITE
+			Full = ModGridRGB.YELLOW
+			Muted = ModGridRGB.YELLOW
+			StepEmpty = ModGridRGB.OFF
+
+
+		class StepEditing:
+			High = ModGridRGB.GREEN
+			Low = ModGridRGB.CYAN
+			Full = ModGridRGB.YELLOW
+			Muted = ModGridRGB.WHITE
+
+
+		StepEmpty = ModGridRGB.OFF
+		StepEmptyBase = ModGridRGB.OFF
+		StepEmptyScale = ModGridRGB.OFF
+		StepDisabled = ModGridRGB.OFF
+		Playhead = Color(31)
+		PlayheadRecord = Color(31)
+		StepSelected = ModGridRGB.GREEN
+		QuantizationSelected = ModGridRGB.RED
+		QuantizationUnselected = ModGridRGB.MAGENTA
+
+
+	class DrumGroup:
+		PadAction = ModGridRGB.WHITE
+		PadFilled = ModGridRGB.GREEN
+		PadFilledAlt = ModGridRGB.MAGENTA
+		PadSelected = ModGridRGB.WHITE
+		PadSelectedNotSoloed = ModGridRGB.WHITE
+		PadEmpty = ModGridRGB.OFF
+		PadMuted = ModGridRGB.YELLOW
+		PadSoloed = ModGridRGB.CYAN
+		PadMutedSelected = ModGridRGB.BLUE
+		PadSoloedSelected = ModGridRGB.BLUE
+		PadInvisible = ModGridRGB.OFF
+		PadAction = ModGridRGB.RED
+
+
+	class MonoInstrument:
+
+
+		PressFlash = ModGridRGB.WHITE
+		OffsetOnValue = ModGridRGB.GREEN
+		OffsetOffValue = ModGridRGB.DARK_GREEN
+		ScaleOffsetOnValue = ModGridRGB.RED
+		ScaleOffsetOffValue = ModGridRGB.DARK_RED
+		SplitModeOnValue = ModGridRGB.WHITE
+		SplitModeOffValue = ModGridRGB.GREY
+		SequencerModeOnValue = ModGridRGB.CYAN
+		SequencerModeOffValue = ModGridRGB.DARK_CYAN
+		DrumOffsetOnValue = ModGridRGB.MAGENTA
+		DrumOffsetOffValue = ModGridRGB.DARK_MAGENTA
+		VerticalOffsetOnValue = ModGridRGB.BLUE
+		VerticalOffsetOffValue = ModGridRGB.DARK_BLUE
+
+
+		class Keys:
+			SelectedNote = ModGridRGB.ORANGE
+			RootWhiteValue = ModGridRGB.RED
+			RootBlackValue = ModGridRGB.BLUE
+			WhiteValue = ModGridRGB.WHITE
+			BlackValue = ModGridRGB.BLACK
+
+
+		class Drums:
+			SelectedNote = ModGridRGB.BLUE
+			EvenValue = ModGridRGB.GREEN
+			OddValue = ModGridRGB.MAGENTA
+
+
+class ModGridColors:
 
 
 	class DefaultButton:
 		On = LividRGB.WHITE
 		Off = LividRGB.OFF
 		Disabled = LividRGB.OFF
-		Alert = LividRGB.RED
-		Transparent = LividRGB.WHITE
-
-	class List:
-		ScrollerOn = LividRGB.GREEN
-		ScrollerOff = LividRGB.MAGENTA
-
-	class Session:
-		StopClipDisabled = LividRGB.OFF
-		StopClipTriggered = LividRGB.BLUE
-		StopClip = LividRGB.BLUE
-		Scene = LividRGB.CYAN
-		NoScene = LividRGB.OFF
-		SceneTriggered = LividRGB.GREEN
-		ClipTriggeredPlay = LividRGB.GREEN
-		ClipTriggeredRecord = LividRGB.RED
-		RecordButton = LividRGB.OFF
-		ClipEmpty = LividRGB.OFF
-		ClipStopped = LividRGB.WHITE
-		ClipStarted = LividRGB.GREEN
-		ClipRecording = LividRGB.RED
-		NavigationButtonOn = LividRGB.CYAN
-		NavigationButtonOff = LividRGB.YELLOW
-		ZoomOn = LividRGB.WHITE
-		ZoomOff = LividRGB.WHITE
-		FireNextArm = LividRGB.RED
-		Delete = LividRGB.BLUE
-		DeletePressed = LividRGB.WHITE
-		Select = LividRGB.BLUE
-		SelectPressed = LividRGB.WHITE
-		Duplicate = Color(70)
-		DuplicatePressed = Color(80)
-
-	class Zooming:
-		Selected = LividRGB.YELLOW
-		Stopped = LividRGB.WHITE
-		Playing = LividRGB.GREEN
-		Empty = LividRGB.OFF
-
-
-	class LoopSelector:
-		Playhead = LividRGB.YELLOW
-		OutsideLoop = LividRGB.BLUE
-		InsideLoopStartBar = LividRGB.CYAN
-		SelectedPage = LividRGB.WHITE
-		InsideLoop = LividRGB.CYAN
-		PlayheadRecord = LividRGB.RED
-		Bank = LividRGB.MAGENTA
-		ShiftLoop = LividRGB.WHITE
-		LatestLoop = LividRGB.YELLOW
-
-
-	class Transport:
-		PlayOn = LividRGB.GREEN
-		PlayOff = LividRGB.OFF
-		StopOn = LividRGB.BLUE
-		StopOff = LividRGB.BLUE
-		RecordOn = LividRGB.RED
-		RecordOff = LividRGB.BLUE
-		OverdubOn = LividRGB.RED
-		OverdubOff = LividRGB.MAGENTA
-		SeekBackwardOn = LividRGB.CYAN
-		SeekBackwardOff = LividRGB.CYAN
-		LoopOn = LividRGB.YELLOW
-		LoopOff = LividRGB.OFF
-		MetroOn = LividRGB.BLUE
-		MetroOff = LividRGB.CYAN
-
-	class Auto_Arm:
-		Enabled = LividRGB.RED
-		Disabled = LividRGB.WHITE
-
-	class Mixer:
-		SoloOn = LividRGB.BLUE
-		SoloOff = LividRGB.WHITE
-		MuteOn = LividRGB.YELLOW
-		MuteOff = LividRGB.WHITE
-		ArmSelected = LividRGB.RED
-		ArmSelectedImplicit = LividRGB.MAGENTA
-		ArmUnselected = LividRGB.RED
-		ArmOff = LividRGB.WHITE
-		StopClip = LividRGB.BLUE
-		SelectedOn = LividRGB.WHITE
-		SelectedOff = LividRGB.OFF
-		ArmOn = LividRGB.RED
-
-
-	class Recording:
-		On = LividRGB.RED
-		Transition = LividRGB.MAGENTA
-		Off = LividRGB.MAGENTA
-
-
-	class Automation:
-		On = LividRGB.WHITE
-		Off = LividRGB.YELLOW
-
-
-	class Recorder:
-		On = LividRGB.WHITE
-		Off = LividRGB.BLUE
-		NewOn = LividRGB.YELLOW
-		NewOff = LividRGB.YELLOW
-		FixedOn = LividRGB.CYAN
-		FixedOff = LividRGB.CYAN
-		RecordOn = LividRGB.MAGENTA
-		RecordOff = LividRGB.MAGENTA
-		AutomationOn = LividRGB.YELLOW
-		AutomationOff = LividRGB.YELLOW
-		FixedAssigned = LividRGB.MAGENTA
-		FixedNotAssigned = LividRGB.OFF
-
-
-	class Device:
-		NavOn = LividRGB.MAGENTA
-		NavOff = LividRGB.OFF
-		BankOn = LividRGB.YELLOW
-		BankOff = LividRGB.OFF
-		ChainNavOn = LividRGB.RED
-		ChainNavOff = LividRGB.OFF
-		ContainNavOn = LividRGB.CYAN
-		ContainNavOff = LividRGB.OFF
-
-	class NoteEditor:
-
-		class Step:
-			Low = LividRGB.CYAN
-			High = LividRGB.WHITE
-			Full = LividRGB.YELLOW
-			Muted = LividRGB.YELLOW
-			StepEmpty = LividRGB.OFF
-
-
-		class StepEditing:
-			High = LividRGB.GREEN
-			Low = LividRGB.CYAN
-			Full = LividRGB.YELLOW
-			Muted = LividRGB.WHITE
-
-
-		StepEmpty = LividRGB.OFF
-		StepEmptyBase = LividRGB.OFF
-		StepEmptyScale = LividRGB.OFF
-		StepDisabled = LividRGB.OFF
-		Playhead = Color(31)
-		PlayheadRecord = Color(31)
-		StepSelected = LividRGB.GREEN
-		QuantizationSelected = LividRGB.RED
-		QuantizationUnselected = LividRGB.MAGENTA
+		Alert = LividRGB.BlinkFast.WHITE
 
 
 	class DrumGroup:
@@ -426,31 +574,9 @@ class UtilColors:
 		PadInvisible = LividRGB.OFF
 		PadAction = LividRGB.RED
 
-	class MonoInstrument:
 
-		PressFlash = LividRGB.WHITE
-		OffsetOnValue = LividRGB.GREEN
-		OffsetOffValue = LividRGB.OFF
-		ScaleOffsetOnValue = LividRGB.RED
-		ScaleOffsetOffValue = LividRGB.OFF
-		SplitModeOnValue = LividRGB.WHITE
-		SplitModeOffValue = LividRGB.OFF
-		SequencerModeOnValue = LividRGB.CYAN
-		SequencerModeOffValue = LividRGB.OFF
-		DrumOffsetOnValue = LividRGB.MAGENTA
-		DrumOffsetOffValue = LividRGB.OFF
-		VerticalOffsetOnValue = LividRGB.BLUE
-		VerticalOffsetOffValue = LividRGB.OFF
+	class Mod:
+		class Nav:
+			OnValue = LividRGB.RED
+			OffValue = LividRGB.WHITE
 
-		class Keys:
-			SelectedNote = LividRGB.GREEN
-			RootWhiteValue = LividRGB.RED
-			RootBlackValue = LividRGB.MAGENTA
-			WhiteValue = LividRGB.CYAN
-			BlackValue = LividRGB.BLUE
-
-
-		class Drums:
-			SelectedNote = LividRGB.BLUE
-			EvenValue = LividRGB.GREEN
-			OddValue = LividRGB.MAGENTA
