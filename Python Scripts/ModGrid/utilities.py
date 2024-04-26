@@ -1,5 +1,6 @@
 # by amounra 0623 : http://www.aumhaa.com
-# written against Live 11.310b1 release on 062723
+# written against Live 11.3.20b1 on 090323
+# version b4.0
 
 from aumhaa.v3.base.debug import *
 

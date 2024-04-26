@@ -1,5 +1,6 @@
-# by amounra 0123 : http://www.aumhaa.com
-# written against Live 11.2.10b3 on 011823
+# by amounra 0524 : http://www.aumhaa.com
+# written against Live 12.0.5b3 on 052524
+# version b7.0
 
 
 import Live
@@ -18,9 +19,9 @@ from future.moves.itertools import zip_longest
 from past.builtins import long
 
 from ableton.v2.base import inject, listens, listens_group, liveobj_valid, is_iterable, nop
-from ableton.v2.control_surface import ControlSurface, ControlElement, Layer, Skin, PrioritizedResource, Component, ClipCreator, DeviceBankRegistry, midi, BANK_MAIN_KEY, BANK_PARAMETERS_KEY, use
+from ableton.v2.control_surface import ControlSurface, ControlElement, Layer, Skin, PrioritizedResource, SharedResource, Component, ClipCreator, DeviceBankRegistry, midi, BANK_MAIN_KEY, BANK_PARAMETERS_KEY, use
 from ableton.v2.control_surface.elements import ButtonMatrixElement, DoublePressElement, MultiElement, DisplayDataSource, SysexElement, EventElement
-from ableton.v2.control_surface.components import MixerComponent, BackgroundComponent, ViewControlComponent, PlayableComponent, ClipSlotComponent, SessionComponent, ViewControlComponent, SessionRingComponent, SessionNavigationComponent, MixerComponent, ChannelStripComponent, UndoRedoComponent, TransportComponent, DeviceNavigationComponent, DisplayingDeviceParameterComponent, DeviceComponent, ScrollComponent
+from ableton.v2.control_surface.components import MixerComponent, BackgroundComponent, ViewControlComponent, PlayableComponent, ClipSlotComponent, SessionComponent, ViewControlComponent, SessionRingComponent, SessionNavigationComponent, MixerComponent, ChannelStripComponent, UndoRedoComponent, TransportComponent, DeviceNavigationComponent, DisplayingDeviceParameterComponent, DeviceComponent, ScrollComponent, ItemProvider, ItemListerComponent, ItemSlot
 from ableton.v2.control_surface.components.mixer import SimpleTrackAssigner, TrackAssigner, RightAlignTracksTrackAssigner
 from ableton.v2.control_surface.mode import AddLayerMode, ModesComponent, DelayMode, CompoundMode
 from ableton.v2.control_surface.elements.physical_display import PhysicalDisplayElement, DisplayElement
@@ -118,7 +119,7 @@ MIDI_CC_STATUS = 176
 MIDI_PB_STATUS = 224
 
 MOD_VIEWS = {'Full': 0, 
-	    	'Half':1, 
+			'Half':1, 
 			'Quarter':2,
 			'Piano':3,
 			'SplitPiano':4,
@@ -194,7 +195,7 @@ class EventMode(Mode, NotifyingControlElement):
 
 	def __init__(self, text = "", *a, **k):
 		self._is_pressed = False
-		super(EventMode, self).__init__(resource_type=PrioritizedResource, *a, **k)
+		super(EventMode, self).__init__(resource_type=SharedResource, *a, **k)
 
 	def reset(self):
 		pass
@@ -240,35 +241,35 @@ class DisplayingButtonWrapper(WrapperElement):
 
 
 class MasterTrackComponent(Component):
-    toggle_button = ToggleButtonControl(toggled_color = 'MasterTrack.On', untoggled_color = 'MasterTrack.Off')
+	toggle_button = ToggleButtonControl(toggled_color = 'MasterTrack.On', untoggled_color = 'MasterTrack.Off')
 
-    def __init__(self, tracks_provider=None, *a, **k):
-        (super(MasterTrackComponent, self).__init__)(*a, **k)
-        self._tracks_provider = tracks_provider
-        self._MasterTrackComponent__on_selected_item_changed.subject = self._tracks_provider
-        self._previous_selection = self._tracks_provider.selected_item
-        self._update_button_state()
+	def __init__(self, tracks_provider=None, *a, **k):
+		(super(MasterTrackComponent, self).__init__)(*a, **k)
+		self._tracks_provider = tracks_provider
+		self._MasterTrackComponent__on_selected_item_changed.subject = self._tracks_provider
+		self._previous_selection = self._tracks_provider.selected_item
+		self._update_button_state()
 
-    @listens('selected_item')
-    def __on_selected_item_changed(self, *a):
-        self._update_button_state()
-        if not self._is_on_master():
-            self._previous_selection = self._tracks_provider.selected_item
+	@listens('selected_item')
+	def __on_selected_item_changed(self, *a):
+		self._update_button_state()
+		if not self._is_on_master():
+			self._previous_selection = self._tracks_provider.selected_item
 
-    def _update_button_state(self):
-        self.toggle_button.is_toggled = self._is_on_master()
+	def _update_button_state(self):
+		self.toggle_button.is_toggled = self._is_on_master()
 
-    @toggle_button.toggled
-    def toggle_button(self, toggled, button):
-        if toggled:
-            self._previous_selection = self._tracks_provider.selected_item
-            self._tracks_provider.selected_item = self.song.master_track
-        else:
-            self._tracks_provider.selected_item = self._previous_selection
-        self._update_button_state()
+	@toggle_button.toggled
+	def toggle_button(self, toggled, button):
+		if toggled:
+			self._previous_selection = self._tracks_provider.selected_item
+			self._tracks_provider.selected_item = self.song.master_track
+		else:
+			self._tracks_provider.selected_item = self._previous_selection
+		self._update_button_state()
 
-    def _is_on_master(self):
-        return self._tracks_provider.selected_item == self.song.master_track
+	def _is_on_master(self):
+		return self._tracks_provider.selected_item == self.song.master_track
 
 
 class DisplayingComboElement(ComboElement):
@@ -2760,9 +2761,139 @@ class ModGridModHandler(ModHandler):
 		self._device_selector.set_assign_button(button)
 
 
+class ModGridScaleProvider(ItemProvider):
+
+	def __init__(self, scale_setting, *a, **k):
+		self._scale_setting = scale_setting
+		(super(ModGridScaleProvider, self).__init__)(*a, **k)
+		self.create_items()
+		self.on_scale_index_changed.subject = scale_setting
+		self.on_scale_index_changed()
+
+	@property
+	def items(self):
+		return self._items
+	
+	def create_items(self):
+		self._items = [(NamedTuple(name=s), 0) for s in SCALENAMES]
+
+	@listens('value')
+	def on_scale_index_changed(self, *a, **k):
+		self.notify_selected_item()
+
+	@property
+	def selected_item(self):
+		value = self._scale_setting.value
+		index = SCALENAMES.index(value)
+		selected = self.items[index][0]
+		return selected
+
+	def select_item(self, item):
+		self._scale_setting.value = item.name
+		self.notify_selected_item()
+
+
+class ModGridScaleChooser(ItemListerComponent):
+
+	left_item = NamedTuple(name='<-')
+	right_item = NamedTuple(name='->')
+
+	def __init__(self, scale_setting, *a, **k):
+		self._scale_provider = ModGridScaleProvider(scale_setting=scale_setting)
+		(super(ModGridScaleChooser, self).__init__)(item_provider = self._scale_provider, num_visible_items=32, *a, **k)
+		self.text_data_sources = [DisplayDataSource('') for index in range(self._num_visible_items)]
+		self.register_disconnectable(self._scale_provider)
+		self._on_item_names_changed.subject = self
+		self.update_items()
+
+	@listens('items')
+	def _on_item_names_changed(self, *a):
+		for source, item in zip_longest(self.text_data_sources, self.items):
+			if source:
+				source.set_display_string(item.name if hasattr(item, 'name') else '')
+
+	def _create_slots(self):
+		items = self._item_provider.items[self.item_offset:]
+		num_slots = min(self._num_visible_items, len(items))
+		new_items = []
+		if num_slots > 0:
+			new_items = [(self._create_slot)(index, *item) for index, item in enumerate(items[:num_slots])]
+		return new_items
+
+	def _create_slot(self, index, item, nesting_level):
+		items = self._item_provider.items[self.item_offset:]
+		num_slots = min(self._num_visible_items, len(items))
+		slot = None
+		if index == 0 and self.can_scroll_left():
+			slot = ItemSlot(item=self.left_item, nesting_level = 0)
+			slot.is_scrolling_indicator = True
+		elif index == num_slots - 1 and self.can_scroll_right():
+			slot = ItemSlot(item=self.right_item, nesting_level = 0)
+			slot.is_scrolling_indicator = True
+		else:
+			slot = ItemSlot(item=item, nesting_level=nesting_level)
+			slot.is_scrolling_indicator = False
+		return slot
+
+	def set_select_buttons(self, buttons):
+		if not self.select_buttons.control_elements is None:
+			for index, button in enumerate(self.select_buttons.control_elements):
+				if hasattr(button, "_display"):
+					button._display.set_data_sources(None)
+		if not buttons is None:
+			self.select_buttons.set_control_element(buttons)
+			for index, button in enumerate(buttons):
+				if hasattr(button, "_display"):
+					if index < self._num_visible_items:
+						button._display.set_data_sources([self.text_data_sources[index]])
+					else:
+						button._display.set_data_sources(None)
+		else:
+			self.select_buttons.set_control_element(None)
+
+	def _on_select_button_pressed(self, button):
+		selected = self.items[button.index].item
+		if selected is self.left_item:
+			self.scroll_left()
+		elif selected is self.right_item:
+			self.scroll_right()
+		else:
+			self._scale_provider.select_item(selected)
+
+	def _color_for_button(self, button_index, is_selected):
+		if self.items[button_index].is_scrolling_indicator:
+			return self.color_class_name + '.ScrollingIndicator'
+		elif is_selected:
+			return self.color_class_name + '.ItemSelected'
+		else:
+			return self.color_class_name + '.ItemNotSelected'
+
+
+class ModGridMonoInstrumentComponent(MonoInstrumentComponent):
+
+	def __init__(self, *a, **k):
+		super(ModGridMonoInstrumentComponent, self).__init__(*a, **k)
+		self.scale_chooser = ModGridScaleChooser(scale_setting=self._scale_offset_component)
+
+	@listens('value')
+	def _on_shift_value(self, value):
+		debug('on shift value:', value)
+		self._shifted = bool(value)
+		self.update()
+
+	def set_shift_button(self, button):
+		debug('shift_button:', button)
+		self._on_shift_value.subject = button
+		self._shifted = 0
+
+
+	def set_shift_mode_button(self, button):
+		debug('shift_mode_button:', button)
+		self._on_shift_value.subject = None
+		self._shifted = 0
+		self._shift_mode.shift_button.set_control_element(button)
+
 class ModGrid(ControlSurface):
-
-
 
 	_rgb = 0
 	_color_type = 'Push'
@@ -2776,6 +2907,7 @@ class ModGrid(ControlSurface):
 	device_provider_class = ModDeviceProvider
 	bank_definitions = BANK_DEFINITIONS
 	_translation_table = ascii_translations
+	_modGrid_version = '1.0'
 
 	def __init__(self, *a, **k):
 		super(ModGrid, self).__init__(*a, **k)
@@ -2987,11 +3119,11 @@ class ModGrid(ControlSurface):
 
 	def _setup_delete(self):
 		# self._delete_default_component = DeleteAndReturnToDefaultComponent(name='DeleteAndDefault')
-        # self._delete_default_component.layer = Layer(delete_button='delete_button')
-        # self._delete_clip = DeleteSelectedClipComponent(name='Selected_Clip_Deleter')
-        # self._delete_clip.layer = Layer(action_button='delete_button')
-        # self._delete_scene = DeleteSelectedSceneComponent(name='Selected_Scene_Deleter')
-        # self._delete_scene.layer = Layer(action_button=(self._with_shift('delete_button')))
+		# self._delete_default_component.layer = Layer(delete_button='delete_button')
+		# self._delete_clip = DeleteSelectedClipComponent(name='Selected_Clip_Deleter')
+		# self._delete_clip.layer = Layer(action_button='delete_button')
+		# self._delete_scene = DeleteSelectedSceneComponent(name='Selected_Scene_Deleter')
+		# self._delete_scene.layer = Layer(action_button=(self._with_shift('delete_button')))
 		self._delete_component = DeleteComponent(name='Deleter')
 		self._delete_component.layer = Layer(priority=6, delete_button=self._delete_button)
 
@@ -3239,9 +3371,9 @@ class ModGrid(ControlSurface):
 
 		self._drum_group_finder = PercussionInstrumentFinder(device_parent=self.song.view.selected_track)
 
-		self._instrument = MonoInstrumentComponent(name = 'InstrumentModes', script = self, skin = self._skin, drum_group_finder = self._drum_group_finder, grid_resolution = self._grid_resolution, settings = DEFAULT_INSTRUMENT_SETTINGS, device_provider = self._device_provider, parent_task_group = self._task_group)
+		self._instrument = ModGridMonoInstrumentComponent(name = 'InstrumentModes', script = self, skin = self._skin, drum_group_finder = self._drum_group_finder, grid_resolution = self._grid_resolution, settings = DEFAULT_INSTRUMENT_SETTINGS, device_provider = self._device_provider, parent_task_group = self._task_group)
 		self._instrument.layer = Layer(priority = 6, delete_button = self._with_text(self._delete_button, 'Delete'), shift_button = self._shiftMode)
-		self._instrument.audioloop_layer = LayerMode(self._instrument, Layer(priority = 6, loop_selector_matrix = self._matrix))
+		self._instrument.audioloop_layer = AddLayerMode(self._instrument, Layer(priority = 6, loop_selector_matrix = self._matrix))
 
 		self._instrument.keypad_options_layer = AddLayerMode(self._instrument, Layer(priority = 5,
 									scale_up_button = self._with_text(self._button[103], 'Scale->'),
@@ -3262,6 +3394,9 @@ class ModGrid(ControlSurface):
 									#split_button = self._with_text(self._button[96], 'Split'),
 									sequencer_button = self._with_text(self._button[96], 'Seq')))
 
+		self._instrument.scale_chooser.main_layer = AddLayerMode(self._instrument.scale_chooser, Layer(priority = 5, 
+									select_buttons=self._8x8_matrix.submatrix[:,:4]))
+	
 		self._instrument._keypad.octave_toggle_layer = AddLayerMode(self._instrument._keypad, Layer(priority = 5, offset_shift_toggle = self._with_text(self._button[97], 'Octave')))
 		self._instrument._drumpad.octave_toggle_layer = AddLayerMode(self._instrument._drumpad, Layer(priority = 5, offset_shift_toggle = self._with_text(self._button[97], 'Octave')))
 
@@ -3292,13 +3427,13 @@ class ModGrid(ControlSurface):
 		self._instrument._main_modes.add_mode('drumpad', [self._instrument._drumpad, self._instrument._drumpad.main_layer, self._instrument.drumpad_options_layer, self._instrument._drumpad.octave_toggle_layer])
 		self._instrument._main_modes.add_mode('drumpad_split', [self._instrument._drumpad, self._instrument._drumpad.split_layer, self._instrument._selected_session, self._instrument._selected_session._drum_layer, self._instrument.drumpad_options_layer, self._instrument._drumpad.octave_toggle_layer])
 		self._instrument._main_modes.add_mode('drumpad_sequencer', [self._instrument._drumpad, self._instrument._drumpad.sequencer_layer, self._playhead_element, self._playhead_element.drumpad_layer, self._instrument._drumpad.split_layer, self._instrument.drumpad_options_layer, self._instrument._drumpad.octave_toggle_layer])
-		self._instrument._main_modes.add_mode('drumpad_shifted', [self._instrument._drumpad, self._instrument._drumpad.select_layer, self._instrument.drumpad_options_layer, self._instrument._drumpad.octave_toggle_layer])
+		self._instrument._main_modes.add_mode('drumpad_shifted', [self._instrument._drumpad, self._instrument._drumpad.split_layer, self._instrument.drumpad_options_layer, self._instrument._drumpad.octave_toggle_layer, self._instrument.scale_chooser.main_layer])
 		# self._instrument._main_modes.add_mode('drumpad_split_shifted', [ self._instrument._drumpad, self._instrument._drumpad.split_select_layer, self._instrument.drumpad_options_layer, self._instrument._drumpad.octave_toggle_layer, self._instrument._selected_session, self._instrument._selected_session._drum_layer])
 		self._instrument._main_modes.add_mode('drumpad_sequencer_shifted', [self._instrument._drumpad, self._instrument._drumpad.split_select_layer, self._instrument._drumpad.sequencer_shift_layer, self._instrument.drumpad_options_layer, self._instrument._drumpad.octave_toggle_layer])
 		self._instrument._main_modes.add_mode('keypad', [self._instrument._keypad, self._instrument._keypad.main_layer, self._instrument.keypad_options_layer, self._instrument._keypad.octave_toggle_layer])
 		self._instrument._main_modes.add_mode('keypad_split', [self._instrument._keypad, self._instrument._keypad.split_layer, self._instrument._selected_session, self._instrument._selected_session._keys_layer, self._instrument.keypad_options_layer, self._instrument._keypad.octave_toggle_layer])
 		self._instrument._main_modes.add_mode('keypad_sequencer', [self._instrument._keypad, self._instrument._keypad.sequencer_layer, self._playhead_element, self._playhead_element.keypad_layer, self._instrument._keypad.split_layer, self._instrument.keypad_options_layer, self._instrument._keypad.octave_toggle_layer])
-		self._instrument._main_modes.add_mode('keypad_shifted', [self._instrument._keypad, self._instrument._keypad.main_layer, self._instrument.keypad_options_layer, self._instrument._keypad.octave_toggle_layer])
+		self._instrument._main_modes.add_mode('keypad_shifted', [self._instrument._keypad, self._instrument._keypad.split_layer, self._instrument.keypad_options_layer, self._instrument._keypad.octave_toggle_layer, self._instrument.scale_chooser.main_layer])
 		# self._instrument._main_modes.add_mode('keypad_split_shifted', [self._instrument._keypad, self._instrument._keypad.split_select_layer, self._instrument.keypad_options_layer, self._instrument._keypad.octave_toggle_layer, self._instrument._selected_session, self._instrument._selected_session._keys_layer])
 		self._instrument._main_modes.add_mode('keypad_sequencer_shifted', [self._instrument._keypad, self._instrument._keypad.split_select_layer, self._instrument._keypad.sequencer_shift_layer, self._instrument.keypad_options_layer, self._instrument._keypad.octave_toggle_layer])
 		self._instrument._main_modes.add_mode('audioloop', [self._instrument.audioloop_layer])

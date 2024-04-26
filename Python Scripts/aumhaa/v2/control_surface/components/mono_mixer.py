@@ -623,8 +623,8 @@ class MonoMixerComponent(MixerComponentBase):
 				strip.set_parameter_controls(None)
 
 
-	# def tracks_to_use(self):
-	# 	return tuple(self.song.visible_tracks) + tuple(self.song.return_tracks)
+	def tracks_to_use(self):
+		return tuple(self.song.visible_tracks) + tuple(self.song.return_tracks)
 
 
 	def set_track_select_dial(self, dial):

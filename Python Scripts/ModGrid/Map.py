@@ -1,6 +1,6 @@
-# by amounra 0120 : http://www.aumhaa.com
-# written against Live 10.1.7 release on 011720
-
+# by amounra 0524 : http://www.aumhaa.com
+# written against Live 12.0.5b3 on 052524
+# version b7.0
 
 from ableton.v2.control_surface.elements.color import Color
 from aumhaa.v3.livid.colors import *
@@ -306,6 +306,7 @@ class UtilColors:
 		ItemSelected = ModGridRGB.WHITE
 		ItemSelectedOff = ModGridRGB.GREY
 		NoItem = ModGridRGB.OFF
+		ScrollingIndicator = ModGridRGB.BLUE
 
 	class EditModeOptions:
 		ItemNotSelected = ModGridRGB.DARK_YELLOW
@@ -318,17 +319,20 @@ class UtilColors:
 		ItemSelected = ModGridRGB.CYAN
 		ItemSelectedOff = ModGridRGB.DARK_CYAN
 		NoItem = ModGridRGB.OFF
+		ScrollingIndicator = ModGridRGB.BLUE
 
 	class BankSelection:
 		ItemNotSelected = ModGridRGB.YELLOW
 		ItemSelected = ModGridRGB.DARK_YELLOW
 		NoItem = ModGridRGB.OFF
+		ScrollingIndicator = ModGridRGB.BLUE
 
 
 	class ChainNavigation:
 		ItemNotSelected = ModGridRGB.GREEN
 		ItemSelected = ModGridRGB.DARK_GREEN
 		NoItem = ModGridRGB.OFF
+		ScrollingIndicator = ModGridRGB.BLUE
 
 
 	class ModeButtons:

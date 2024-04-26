@@ -22,10 +22,7 @@ MIDI_NOTE_OFF_STATUS = 128
 MIDI_CC_STATUS = 176
 MIDI_PB_STATUS = 224
 
-LIVID_COLOR_MAP = [2, 64, 4, 8, 16, 127, 32]
-
 debug = initialize_debug()
-
 
 
 
@@ -34,12 +31,12 @@ class MonoButtonElement(ButtonElement):
 	__doc__ = ' Special button class that can be configured with custom on- and off-values, some of which flash at specified intervals called by _Update_Display'
 
 
-	def __init__(self, name = 'MonoButton', script = None, color_map = LIVID_COLOR_MAP, monobridge = None, *a, **k):
+	def __init__(self, name = 'MonoButton', script = None, color_map = None, monobridge = None, *a, **k):
 		super(MonoButtonElement, self).__init__(name = name, *a, **k)
 		self._script = script
-		self._color_map = color_map 
-		self._num_colors = len(self._color_map)
-		self._num_flash_states = int(127/self._num_colors)
+		self._color_map = color_map or [2, 64, 4, 8, 16, 127, 32]
+		self._num_colors = 7
+		self._num_flash_states = 18
 		self._flash_state = 0
 		self._color = 0
 		self._on_value = 127
@@ -188,8 +185,8 @@ class MonoButtonElement(ButtonElement):
 	#		return super(MonoButtonElement, self).script_wants_forwarding()
 
 
-	# def set_enabled(self, enabled):
-	# 	self.suppress_script_forwarding = not enabled
+	def set_enabled(self, enabled):
+		self.suppress_script_forwarding = not enabled
 
 
 	def flash(self, timer):

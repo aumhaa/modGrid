@@ -73,7 +73,7 @@ class MonoKeyGroupComponent(PlayableComponent):
 		self.update_matrix()
 
 
-	@property
+	@listenable_property
 	def scale(self):
 		return self._scale
 
@@ -82,9 +82,10 @@ class MonoKeyGroupComponent(PlayableComponent):
 	def scale(self, scale):
 		self._scale = scale
 		self.update_matrix()
+		self.notify_scale(self._scale)
 
 
-	@property
+	@listenable_property
 	def vertical_offset(self):
 		return self._vertoffset
 
@@ -93,9 +94,10 @@ class MonoKeyGroupComponent(PlayableComponent):
 	def vertical_offset(self, offset):
 		self._vertoffset = offset
 		self.update_matrix()
+		self.notify_vertical_offset(self._vertoffset)
 
 
-	@property
+	@listenable_property
 	def offset(self):
 		return self._offset
 
@@ -104,6 +106,7 @@ class MonoKeyGroupComponent(PlayableComponent):
 	def offset(self, offset):
 		self._offset = offset
 		self.update_matrix()
+		self.notify_offset(self._offset)
 
 
 	def update_matrix(self):

@@ -30,9 +30,7 @@ INTERVAL_SCROLLING_DELAY = 1
 
 CS_LIST_KEY = 'control_surfaces'
 
-LOCAL_DEBUG = False
-
-debug = initialize_debug(local_debug = LOCAL_DEBUG)
+debug = initialize_debug(local_debug = False)
 
 def hascontrol(handler, control):
 	return control in list(handler._controls.keys())
@@ -657,7 +655,7 @@ class ModHandler(Component):
 	def select_mod(self, mod = None):
 		self._active_mod = mod
 		self._colors = list(range(128))
-		# debug('select_mod(), new mod is:--------------------------------', mod)
+		debug('select_mod(), new mod is:--------------------------------', mod)
 		for mod in self.modrouter._mods:
 			if self in mod._active_handlers:
 				mod._active_handlers.remove(self)
@@ -1450,8 +1448,7 @@ class LegacyModDeviceProxy(ModDeviceProxy):
 
 
 	def _set_device_parent(self, mod_device_parent, single = None):
-		# debug('_set_device_parent', mod_device_parent, single, mod_device_parent.name if hasattr(mod_device_parent, 'name') else 'No name attr')
-
+		#debug('_set_device_parent', mod_device_parent, single)
 		self._parent_device_changed.subject = None
 		if isinstance(mod_device_parent, Live.Device.Device):
 			if mod_device_parent.can_have_chains and single is None:
@@ -1463,19 +1460,19 @@ class LegacyModDeviceProxy(ModDeviceProxy):
 				self._device_parent = mod_device_parent
 				self._assign_parameters(self._device_parent, True)
 		elif 'NoDevice' in list(self._bank_dict.keys()):
-			# debug('_set_device_parent is NoDevice')
+			#debug('_set_device_parent is NoDevice')
 			self._device_parent = self._nodevice
 			self._device_chain = 0
 			self._assign_parameters(None, True)
 		else:
-			# debug('_set_device_parent is None')
+			#debug('_set_device_parent is None')
 			self._device_parent = None
 			self._device_chain = 0
 			self._assign_parameters(None, True)
 
 
 	def _select_parent_chain(self, chain, force = False):
-		# debug('_select_parent_chain ', str(chain))
+		#debug('_select_parent_chain ', str(chain))
 		self._device_chain = chain
 		if self._device_parent != None:
 			if isinstance(self._device_parent, Live.Device.Device):
@@ -1490,7 +1487,7 @@ class LegacyModDeviceProxy(ModDeviceProxy):
 
 
 	def _select_drum_pad(self, pad, force = False):
-		# debug('_select_drum_pad', pad, force, 'parent:', self._device_parent)
+		#debug('_select_drum_pad', pad, force, 'parent:', self._device_parent)
 		if self._device_parent != None:
 			if isinstance(self._device_parent, Live.Device.Device):
 				#debug('is device')
@@ -1532,13 +1529,13 @@ class LegacyModDeviceProxy(ModDeviceProxy):
 			class_name = device.class_name
 		else:
 			class_name = 'Other'
-		#debug('class name is:', class_name, 'keys:', self._bank_dict.keys());
+		debug('class name is:', class_name, 'keys:', self._bank_dict.keys());
 		if (class_name in list(self._bank_dict.keys())):
-			#debug('class name in keys...')
+			# debug('class name in keys...')
 			bank_index = clamp(self._bank_index, 0, len(self._bank_dict[class_name]))
-			#debug('bank index is:', bank_index)
+			# debug('bank index is:', bank_index)
 			bank = [name for name in self._bank_dict[class_name][bank_index]]
-			#debug('bank is:', bank)
+			# debug('bank is:', bank)
 			for parameter_name in bank:
 				new_parameters.append(self.get_parameter_by_name(device, parameter_name))
 		elif device is self._mod_device:
@@ -1547,17 +1544,26 @@ class LegacyModDeviceProxy(ModDeviceProxy):
 			param.parameter = parameter
 		self.parameters = new_parameters
 		self._parent.send('lcd', 'device_name', 'lcd_name', generate_strip_string(str(device.name)) if hasattr(device, 'name') else ' ')
-		#debug('params are now:', [param.parameter.name if hasattr(param.parameter, 'name') else None for param in self._params])
+		# debug('params are now:', [param.parameter.name if hasattr(param.parameter, 'name') else None for param in self._params])
 
 
 	def get_parameter_by_name(self, device, name):
-		#debug('get parameter: device-', device, 'name-', name)
+		# debug('get parameter: device-', device, 'name-', name)
 		result = None
 		if device:
 			for i in device.parameters:
+				# debug('original_name', i.original_name, i.name)
 				if (i.original_name == name):
 					result = i
 					break
+				elif (i.name == name):
+					# debug('original_name', i.name)
+					result = i
+					break
+				elif (i.name.startswith(name)):
+					result = i
+					break
+
 			if result == None:
 				if name == 'Mod_Chain_Pan':
 					if device.canonical_parent.mixer_device != None:
@@ -1576,10 +1582,10 @@ class LegacyModDeviceProxy(ModDeviceProxy):
 								if len(device.canonical_parent.mixer_device.sends)>send_index:
 									result = device.canonical_parent.mixer_device.sends[send_index]
 		if result == None:
-			#debug('checking for ModDevice...')
+			debug('checking for ModDevice...')
 			if match('ModDevice_', name) and self._mod_device != None:
 				name = name.replace('ModDevice_', '')
-				#debug('modDevice with name:', name)
+				debug('modDevice with name:', name)
 				for i in self._mod_device.parameters:
 					if (i.name == name):
 						result = i
@@ -1593,7 +1599,7 @@ class LegacyModDeviceProxy(ModDeviceProxy):
 				index = int(name.replace('ModDisplayParameter_', ''))
 				if len(self._display_parameters)>index:
 					result = self._display_parameters[index]
-					#debug('passing ModDisplayParameter:', result)
+					# debug('passing ModDisplayParameter:', result)
 		return result
 
 
@@ -1669,7 +1675,7 @@ class LegacyModDeviceProxy(ModDeviceProxy):
 
 
 	def _params_value_change(self, sender, control_name, feedback = True):
-		# debug('params change', sender, control_name)
+		#debug('params change', sender, control_name)
 		pn = ' '
 		pv = ' '
 		val = 0
@@ -1758,10 +1764,7 @@ class ModClient(NotifyingControlElement):
 		self._translations = {}
 		self._translation_groups = {}
 		self._color_maps = {}
-		self._legacy = False
-		self._mira_view = False
-		self._mira_address = None
-		self._mira_id = None
+		self.legacy = False
 		self._device_proxy = LegacyModDeviceProxy(parent = self, mod_device = device)
 		self._proxied_devices = [self._device_proxy]
 		self.register_addresses()
@@ -1778,24 +1781,6 @@ class ModClient(NotifyingControlElement):
 	@property
 	def device(self):
 		return self._device
-
-
-	@listenable_property
-	def legacy(self):
-		return self._legacy
-
-	@listenable_property
-	def mira_view(self):
-		return self._mira_view
-
-	@listenable_property
-	def mira_id(self):
-		return self._mira_id
-
-
-	@listenable_property
-	def mira_address(self):
-		return self._mira_address
 
 
 	def register_addresses(self):
@@ -2005,28 +1990,9 @@ class ModClient(NotifyingControlElement):
 
 	def set_legacy(self, value):
 		debug('set_legacy: ' + str(value))
-		self._legacy = value > 0
-		self.notify_legacy(self.legacy)
+		self.legacy = value > 0
 		for handler in self.active_handlers():
 			handler.update()
-
-
-	def set_mira_view(self, value = False, *a, **k):
-		debug('set_mira_view:', value)
-		self._mira_view = bool(value)
-		self.notify_mira_view(self.mira_view)
-	
-
-	def set_mira_address(self, address, *a, **k):
-		debug('set_mira_address: ' + str(address))
-		self._mira_address = str(address)
-		self.notify_mira_address(self.mira_address)
-
-
-	def set_mira_id(self, id = None, *a, **k):
-		debug('set_mira_id:', id)
-		self._mira_id = str(id)
-		self.notify_mira_id(self.mira_id)
 
 
 	def set_name(self, name):
@@ -2273,10 +2239,10 @@ class ModRouter(Component):
 		for mod in self._mods:
 			mod._disconnect_client()
 		self._mods = []
-		# for surface in get_control_surfaces():
-			# if hasattr(surface, 'monomodular'):
-			# 	debug('deleting monomodular for ' + str(surface))
-			# 	del surface.monomodular
+		for surface in get_control_surfaces():
+			if hasattr(surface, 'monomodular'):
+				debug('deleting monomodular for ' + str(surface))
+				del surface.monomodular
 		old_host = self._host
 		self._host = None
 		self._handlers = []

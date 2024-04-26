@@ -16,7 +16,6 @@ debug = initialize_debug()
 
 
 class MonoDrumGroupComponent(DrumGroupComponent):
-	delete_button = ButtonControl()
 
 	mute_button = ButtonControl(color='DrumGroup.PadMuted')
 	solo_button = ButtonControl(color='DrumGroup.PadSoloed')
@@ -99,7 +98,7 @@ class MonoDrumGroupComponent(DrumGroupComponent):
 
 
 	def _create_and_set_pad_translations(self):
-		# debug('_create_and_set_pad_translations')
+		debug('_create_and_set_pad_translations')
 		def create_translation_entry(button):
 			row, col = button.coordinate
 			return (col,
@@ -290,7 +289,7 @@ class MonoDrumGroupComponent(DrumGroupComponent):
 
 
 	def _update_note_translations(self):
-		# debug('_update_note_translations')
+		debug('_update_note_translations')
 		"""if liveobj_valid(self._drum_group_device):
 			debug('MONO')
 			super(MonoDrumGroupComponent, self)._update_note_translations()
@@ -326,7 +325,5 @@ class MonoDrumGroupComponent(DrumGroupComponent):
 		debug('solo_button.value:', value)
 		self._set_control_pads_from_script(bool(value))
 
-	# def set_delete_button(self, *a, **k):
-	# 	pass
 
 #a

@@ -68,12 +68,17 @@ class MonoDrumGroupComponent(DrumGroupComponent):
 		self.update_matrix()
 
 
+	@listenable_property
+	def listenable_position(self):
+		if liveobj_valid(self._drum_group_device):
+			return self._drum_group_device.view.drum_pads_scroll_position
+		return self._raw_position
+
 	@property
 	def position(self):
 		if liveobj_valid(self._drum_group_device):
 			return self._drum_group_device.view.drum_pads_scroll_position
-		return 0
-
+		return self._raw_position
 
 	@position.setter
 	def position(self, index):
@@ -82,9 +87,8 @@ class MonoDrumGroupComponent(DrumGroupComponent):
 		self._raw_position = index
 		if liveobj_valid(self._drum_group_device):
 			self._drum_group_device.view.drum_pads_scroll_position = index
-			self.update_matrix()
-		else:
-			self.update_matrix()
+		self.update_matrix()
+		self.notify_listenable_position(self.listenable_position)
 
 
 	def update_matrix(self):

@@ -1,5 +1,6 @@
-# by amounra 0217 : http://www.aumhaa.com
-# written against Live 10.0.5 on 102318
+# by amounra 0524 : http://www.aumhaa.com
+# written against Live 12.0.5b3 on 052524
+# version b7.0
 
 import Live
 from math import *

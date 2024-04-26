@@ -1,7 +1,7 @@
 # modGrid
 Max and Python support for modGrid Beta
 
-Built against Live Beta 11.3.20b1.
+Built against Live Beta 12.0.5b3.
 Add the folders from Python Scripts (aumhaa, modGrid) to your Ableton User Libraries Remote Scripts folder (you may need to create it).  
 Normally, this will be at ~/Music/Ableton/User Library/Remote Scripts/.  If you've set a custom path, you should be able to find the correct location by looking in Ableton's file settings. 
 
@@ -9,6 +9,10 @@ Documentation for modGrid app forthcoming...
 
 
 Changelog:  
+
+Beta (7.0) - 5.25.24
+    Added capability of linking with MorphGrid script for Sensel Morph.
+    Added scale selection component for selecting playable scale via top part of grid while shift is held.
 
 Beta(4.0) - 9.3.23:
     Moved aumhaa dependencies to v3 to avoid conflicts with older scripts.
