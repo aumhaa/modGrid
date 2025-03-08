@@ -1,6 +1,6 @@
-# by amounra 0524 : http://www.aumhaa.com
-# written against Live 12.0.5b3 on 052524
-# version b7.0
+# by amounra 0325 : http://www.aumhaa.com
+# written against Live 12.2b8 on 030825
+# version b12.0
 
 
 import Live
@@ -101,7 +101,7 @@ from .launchpad_mod import _Launchpad_setup_mod
 from _Generic.Devices import *
 from .Map import *
 
-LOCAL_DEBUG = False
+LOCAL_DEBUG = True
 
 debug = initialize_debug(local_debug=LOCAL_DEBUG)
 
@@ -1185,7 +1185,6 @@ class UtilChannelStripComponent(MonoChannelStripComponent):
 
 		super(UtilChannelStripComponent, self).__init__(*a, **k)
 
-
 	def get_tracks(self):
 		tracks = [track for track in self.song.tracks]
 		for track in self.song.return_tracks:
@@ -1454,6 +1453,7 @@ class UtilMixerComponent(MonoMixerComponent):
 	def set_util_select_first_armed_track_button(self, button):
 		self.util_select_first_armed_track_button.set_control_element(button)
 
+
 	@util_select_first_armed_track_button.pressed
 	def util_select_first_armed_track_button(self, button):
 		self._on_util_select_first_armed_track_button_pressed(button)
@@ -1466,7 +1466,6 @@ class UtilMixerComponent(MonoMixerComponent):
 		armed_tracks = self.armed_tracks()
 		if len(armed_tracks):
 			self.song.view.selected_track = armed_tracks[0]
-
 
 	def set_util_mute_kill_button(self, button):
 		# debug('set_util_mute_kill_button', button)
@@ -1975,6 +1974,7 @@ class UtilSessionRingComponent(SessionRingTrackProvider):
 		super(UtilSessionRingComponent, self).__init__(*a, **k)
 		#self._track_assigner = UtilRightAlignTracksTrackAssigner(song=(self.song))
 		#self._track_assigner = UtilSimpleTrackAssigner()
+		self._on_selected_track_changed.subject = self.song.view
 		self._on_offsets_changed.subject = self
 
 	@listens('offset')
@@ -1984,6 +1984,19 @@ class UtilSessionRingComponent(SessionRingTrackProvider):
 	@listenable_property
 	def offsets(self):
 		return (self.track_offset, self.scene_offset)
+
+	@listens('selected_track')
+	def _on_selected_track_changed(self):
+		track = self.song.view.selected_track
+		if liveobj_valid(track):
+			if not track in self.controlled_tracks():
+				tracks = list(self.tracks_to_use())
+				if track in tracks:
+					index = tracks.index(track)
+					if(index < self.track_offset):
+						self.set_offsets(index, self.scene_offset)
+					elif(index >= self.track_offset + self.num_tracks):
+						self.set_offsets(index - self.num_tracks + 1, self.scene_offset)
 
 
 class ModGridSessionNavigationComponent(SessionNavigationComponent):
@@ -2295,12 +2308,15 @@ class ModGridKeysGroup(PlayableComponent, ScrollComponent, Scrollable):
 			# debug('channel is:', channel)
 		return ( note, channel)
 
+
 	def _update_button_color(self, button):
 		if not button._control_element is None and hasattr(button._control_element, 'original_identifier'):
 			note = button._control_element.original_identifier()
-			button.color = 1 if note%12 in WHITEKEYS else 0
+			# button.color = 'PianoInstrument.WhiteKey' if note%12 in WHITEKEYS else 'PianoInstrument.BlackKey'
+			button.color = 122 if note%12 in WHITEKEYS else 0
 			if button._control_element:
 				button._control_element.scale_color = button.color
+
 
 	def update(self, *a, **k):
 		super(ModGridKeysGroup, self).update(*a, **k)
@@ -2488,6 +2504,13 @@ class TextArray(Array):
 		self._cell = [StoredElement(self._name + '_' + str(num), _num = num, _value = '', *a, **k) for num in range(size)]
 
 
+class EncoderGrid(Grid):
+
+	def __init__(self, name, width, height, active_handlers = return_empty, *a, **k):
+		super(TextGrid, self).__init__(name, width, height, active_handlers, *a, **k)
+		self._cell = [[StoredElement(active_handlers, _name = self._name + '_' + str(x) + '_' + str(y), _x = x, _y = y , _value =0, *a, **k) for y in range(height)] for x in range(width)]
+
+
 class ModGridNavigationBox(NavigationBox):
 
 
@@ -2526,11 +2549,27 @@ class ModGridModHandler(ModHandler):
 		self._color_type = 'Push'
 		self._grid = None
 		addresses = {'key_text': {'obj':TextArray('key_text', 8), 'method':self._receive_key_text},
-					'grid_text': {'obj':TextGrid('grid_text', 16, 16), 'method':self._receive_grid_text}}
+					'grid_text': {'obj':TextGrid('grid_text', 16, 16), 'method':self._receive_grid_text},
+					'slider': {'obj':Array('slider', 16), 'method':self._receive_slider},
+					'slider_text': {'obj':TextArray('slider_text', 16), 'method':self._receive_slider_text}}
 		self._special_mode_index = 0
 		super(ModGridModHandler, self).__init__(addresses = addresses, *a, **k)
 		self.nav_box = ModGridNavigationBox(self, 16, 16, 16, 16, self.set_offset,)
 		self._shifted = False
+
+
+
+	@listens('value')
+	def _sliders_value(self, value, x, y, *a, **k):
+		# debug('_sliders_value:', x, value)
+		if self._active_mod:
+			self._active_mod.send('slider', x, value)
+
+
+	# @listens('value')
+	# def _sliders_text_value(self, value, x, y, *a, **k):
+	# 	if self._active_mod:
+	# 		self._active_mod.send('slider_text', x, value)
 
 
 	@listenable_property
@@ -2638,6 +2677,28 @@ class ModGridModHandler(ModHandler):
 			button = self._keys_value.subject.get_button(0, x)
 			if button:
 				button.set_text(value)
+
+
+	def set_sliders(self, sliders):
+		self._sliders_value.subject = sliders
+		if self.active_mod():
+			self.active_mod()._addresses['slider'].restore()
+
+
+	def _receive_slider(self, x, value):
+		# debug('_receive_slider:', x, value)
+		if not self._sliders_value.subject is None:
+			# self._encoders_value.subject.send_value(x, 0, self._push_colors[self._colors[value]], True)
+			self._sliders_value.subject.send_value(x, 0, value, True)
+
+
+	def _receive_slider_text(self, x, value = '', *a, **k):
+		pass
+		#debug('_receive_slider_text:', x, value)
+		# if not self._sliders_value.subject is None:
+		# 	slider = self._sliders_value.subject.get_button(0, x)
+		# 	if slider:
+		# 		slider.set_text(value)
 
 
 	def nav_update(self):
@@ -2893,6 +2954,7 @@ class ModGridMonoInstrumentComponent(MonoInstrumentComponent):
 		self._shifted = 0
 		self._shift_mode.shift_button.set_control_element(button)
 
+
 class ModGrid(ControlSurface):
 
 	_rgb = 0
@@ -2920,9 +2982,9 @@ class ModGrid(ControlSurface):
 			self._setup_sysex()
 			self._setup_animations()
 			self._setup_controls()
+			self._setup_autoarm()
 			self._setup_background()
 			self._setup_delete()
-			self._setup_autoarm()
 			self._setup_session_control()
 			self._setup_mixer_control()
 			self._setup_track_creator()
@@ -3057,6 +3119,11 @@ class ModGrid(ControlSurface):
 		self._encoder_matrix = ButtonMatrixElement(name = 'Dial_Matrix', rows = [self._encoder]) # + [self._fader, self._master_dial, self._crossfader]]) #, self._encoder[8:]])
 		self._encoder_name_displays = ButtonMatrixElement(name = 'Dial_Name_Displays', rows = [[self._encoder[index]._name_display for index in range(16)]])
 		self._encoder_value_displays = ButtonMatrixElement(name = 'Dial_Value_Displays', rows = [[self._encoder[index]._value_display for index in range(16)]])
+
+		self._mod_encoder = [SpecialEncoderElement(name = 'ModEncoder_'+str(index),  msg_type = MIDI_CC_TYPE, channel = main_chan, identifier = index, map_mode = Live.MidiMap.MapMode.absolute,) for index in range(48,64)]
+		self._mod_encoder_matrix = ButtonMatrixElement(name = 'ModEncoder_Matrix', rows = [self._mod_encoder]) # + [self._fader, self._master_dial, self._crossfader]]) #, self._encoder[8:]])
+		# self._mod_encoder_name_displays = ButtonMatrixElement(name = 'ModEncoder_Name_Displays', rows = [[self._mod_encoder[index]._name_display for index in range(16)]])
+		# self._mod_encoder_value_displays = ButtonMatrixElement(name = 'ModEncoder_Value_Displays', rows = [[self._mod_encoder[index]._value_display for index in range(16)]])
 
 		self._keys = self._key_matrix
 
@@ -3486,7 +3553,8 @@ class ModGrid(ControlSurface):
 																			# Alt_button = self._altMode,
 																			shift_button = self._shiftMode,
 																			alt_button = self._altMode,
-																			key_buttons = self._chain_select_matrix,)
+																			key_buttons = self._chain_select_matrix,
+																			sliders = self._mod_encoder_matrix,)
 																			# key_buttons = self._key_matrix)
 		self.modhandler.alt_shift_layer = AddLayerMode( self.modhandler, Layer())
 		self.modhandler.legacy_shift_layer = AddLayerMode( self.modhandler, Layer(priority = 6,
@@ -3618,6 +3686,7 @@ class ModGrid(ControlSurface):
 		self._full_modes.add_mode('disabled', [])
 		self._full_modes.add_mode('Main', [self._background,
 											self._master_select,
+											self._autoarm,
 											self._mixer,
 											self._mixer._selected_strip,
 											self._mixer._master_strip,
@@ -3633,7 +3702,6 @@ class ModGrid(ControlSurface):
 											self._undo_redo,
 											self._track_creator,
 											self._session_navigation,
-											self._autoarm,
 											self._device_deleter,
 											self._device_selector_modes,
 											self._hotswap,

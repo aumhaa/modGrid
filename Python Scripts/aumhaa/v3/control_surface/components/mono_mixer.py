@@ -88,8 +88,6 @@ def turn_button_on_off(button, on = True):
 			button.turn_off()
 
 
-
-
 class ChannelStripStaticDeviceProvider(EventObject):
 
 
@@ -112,7 +110,6 @@ class ChannelStripStaticDeviceProvider(EventObject):
 		if liveobj_changed(self._device, device):
 			self._device = device
 			self.notify_device()
-
 
 
 class ChannelStripDeviceComponent(DeviceComponent):
@@ -154,27 +151,32 @@ class MonoChannelStripComponent(ChannelStripComponentBase):
 		def make_property_slot(name, alias = None):
 			alias = alias or name
 			return self.register_slot(None, getattr(self, '_on_%s_changed' % alias), name)
+		# self._track_property_slots.append(make_property_slot('implicit_arm'))
 		self._track_property_slots.append(make_property_slot('output_meter_level'))
 		self._track_property_slots.append(make_property_slot('output_meter_left'))
 		self._track_property_slots.append(make_property_slot('output_meter_right'))
+		self._track_property_slots.append(make_property_slot('implicit_arm'))
 
 		self._playing_clip = None
 
 		# def make_control_slot(name):
 		#     return self.register_slot(None, getattr(self, u'_%s_value' % name), u'value')
+		# self.register_slot(None, getattr(self, '_implicit_arm_value'), 'value')
 		self.register_slot(None, getattr(self, '_output_meter_level_value'), 'value')
 		self.register_slot(None, getattr(self, '_output_meter_left_value'), 'value')
 		self.register_slot(None, getattr(self, '_output_meter_right_value'), 'value')
+		self.register_slot(None, getattr(self, '_implicit_arm_value'), 'value')
 
 		self._device_provider = ChannelStripStaticDeviceProvider()
 		self._device_component = self._create_device(device_provider=self._device_provider)
 		self._track_state = self.register_disconnectable(TrackArmState())
 		self._fold_task = self._tasks.add(Task.sequence(Task.wait(TRACK_FOLD_DELAY), Task.run(self._do_fold_track))).kill()
 		self._on_arm_state_changed.subject = self._track_state
-		self._ChannelStripComponent__on_selected_track_changed.subject = None
-		self._ChannelStripComponent__on_selected_track_changed = self.__on_selected_track_changed
-		self.__on_selected_track_changed.subject = self.song.view
-		self.__on_selected_track_changed()
+		# self._ChannelStripComponent__on_selected_track_changed.subject = None
+		# self._ChannelStripComponent__on_selected_track_changed = self.__on_selected_track_changed
+
+		self._on_selected_track_changed.subject = self.song.view
+		self._on_selected_track_changed()
 		self._update_playing_clip()
 
 
@@ -199,8 +201,20 @@ class MonoChannelStripComponent(ChannelStripComponentBase):
 	def playing_clip(self):
 		return self._playing_clip
 
+	# @listens('selected_track')
+	# def __on_selected_track_changed(self):
+	# 	if liveobj_valid(self._track) or self.empty_color == None:
+	# 		if self.song.view.selected_track == self._track:
+	# 			self.select_button.color = self._selected_on_color
+	# 		else:
+	# 			self.select_button.color = self._selected_off_color
+	# 	else:
+	# 		self.select_button.color = self.empty_color
+	# 	self._update_track_button()
+	# 	self._update_device_selection()
+
 	@listens('selected_track')
-	def __on_selected_track_changed(self):
+	def _on_selected_track_changed(self):
 		if liveobj_valid(self._track) or self.empty_color == None:
 			if self.song.view.selected_track == self._track:
 				self.select_button.color = self._selected_on_color
@@ -236,11 +250,13 @@ class MonoChannelStripComponent(ChannelStripComponentBase):
 			self._output_meter_left_control = control
 			self.update()
 
+
 	def set_output_meter_right_control(self, control):
 		if control != self._output_meter_right_control:
 			release_control(self._output_meter_right_control)
 			self._output_meter_right_control = control
 			self.update()
+
 
 	def _scaled_value(self, pos, minp = 0, maxp= 1):
 		minv = 0
@@ -313,6 +329,7 @@ class MonoChannelStripComponent(ChannelStripComponentBase):
 			else:
 				self._arm_button.set_light(self.empty_color)
 		self._update_track_button()
+
 
 
 	def _on_cf_assign_changed(self):
@@ -422,6 +439,15 @@ class MonoChannelStripComponent(ChannelStripComponentBase):
 		if self.is_enabled() and self._track:
 			self._update_track_button()
 
+	def _on_implicit_arm_changed(self):
+		if self.is_enabled() and self._track:
+			self._update_track_button()
+
+
+	# @listens('implicit_arm')
+	# def _on_implicit_arm_state_changed(self):
+	# 	if self.is_enabled() and self._track:
+	# 		self._update_track_button()
 
 	def set_arming_select_button(self, button):
 		button and button.reset()
@@ -453,6 +479,10 @@ class MonoChannelStripComponent(ChannelStripComponentBase):
 	@listens('value')
 	def _output_meter_right_value(self, value):
 		pass
+
+	@listens('value')
+	def _implicit_arm_value(self, value):
+		debug('implicit_arm_value:', value)
 
 	def _do_toggle_arm(self, exclusive = False):
 		if self._track.can_be_armed:
@@ -494,8 +524,6 @@ class MonoChannelStripComponent(ChannelStripComponentBase):
 	def disconnect(self):
 		self._device_component._get_device = lambda: None
 		super(MonoChannelStripComponent, self).disconnect()
-
-
 
 
 class MonoMixerComponent(MixerComponentBase):

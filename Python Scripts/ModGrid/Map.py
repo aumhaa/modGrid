@@ -172,7 +172,7 @@ SCALEABBREVS = {'Auto':'-A','Keys':'-K','Chromatic':'12','DrumPad':'-D','Major':
 DEFAULT_AUTO_SCALE = 'Chromatic'
 
 """This is the default Vertical Offset for any scale other than DrumPad """
-DEFAULT_VERTOFFSET = 4
+DEFAULT_VERTOFFSET = 5
 
 """This is the default NoteOffset, aka RootNote, used for scales other than DrumPad"""
 DEFAULT_OFFSET = 48
@@ -233,33 +233,33 @@ class FlashingColor(Color):
 class ModGridRGB:
 	OFF = MonoColor(0)
 	BLACK = MonoColor(0)
-	GREY = MonoColor(70)
-	DARK_GREY = MonoColor(117)
-	WHITE = MonoColor(1)
-	YELLOW = MonoColor(2)
-	DARK_YELLOW = MonoColor(14)
-	CYAN = MonoColor(3)
+	GREY = MonoColor(123)
+	DARK_GREY = MonoColor(124)
+	WHITE = MonoColor(122)
+	YELLOW = MonoColor(7)
+	DARK_YELLOW = MonoColor(29)
+	CYAN = MonoColor(16)
 	DARK_CYAN = MonoColor(38)
-	MAGENTA = MonoColor(4)
+	MAGENTA = MonoColor(24)
 	DARK_MAGENTA = MonoColor(54)
-	RED = MonoColor(5)
-	DARK_RED = MonoColor(10)
-	GREEN = MonoColor(6)
-	DARK_GREEN = MonoColor(22)
-	BLUE = MonoColor(7)
-	DARK_BLUE = MonoColor(46)
-	ORANGE = MonoColor(96)
-	DARK_ORANGE = MonoColor(126)
-	PURPLE = MonoColor(49)
-	DARK_PURPLE = MonoColor(93)
+	RED = MonoColor(127)
+	DARK_RED = MonoColor(67)
+	GREEN = MonoColor(32)  #82,84,85, 32
+	DARK_GREEN = MonoColor(90)
+	BLUE = MonoColor(125)
+	DARK_BLUE = MonoColor(33)
+	ORANGE = MonoColor(30)
+	DARK_ORANGE = MonoColor(4)
+	PURPLE = MonoColor(107)
+	DARK_PURPLE = MonoColor(34)
 
-	SALMON = MonoColor(8)
-	CANARY = MonoColor(12)
-	LIME = MonoColor(17)
+	SALMON = MonoColor(25)
+	CANARY = MonoColor(77)
+	LIME = MonoColor(126)
 	SPRING = MonoColor(25)
 	TURQUOISE = MonoColor(29)
-	SKY = MonoColor(37)
-	OCEAN = MonoColor(41)
+	SKY = MonoColor(46)
+	OCEAN = MonoColor(33)
 	ORCHID = MonoColor(49)
 	PINK = MonoColor(52)
 	FUSCIA = MonoColor(56)
@@ -270,12 +270,57 @@ class ModGridRGB:
 	FLASHING_CYAN = FlashingColor(3, 38)
 	FLASHING_MAGENTA = FlashingColor(4, 54)
 	FLASHING_RED = FlashingColor(5, 10)
-	FLASHING_BLUE = FlashingColor(7, 46)
+	FLASHING_BLUE = FlashingColor(7, 127)
 	FLASHING_ORANGE = FlashingColor(96, 126)
 	FLASHING_PURPLE = FlashingColor(49, 93)
 
 
-
+	# OFF: 0,
+	# BLACK: 0,
+	# PEACH: 1,
+	# CHERRY: 2,
+	# AMBER: 3,
+	# DARK_ORANGE: 4,
+	# TAN: 5,
+	# BROWN: 6,
+	# YELLOW: 7,
+	# GOLD: 8,
+	# PISTACIO: 9,
+	# MINT: 10,
+	# LIME: 11,
+	# OLIVE: 12, 
+	# LIGHT_GREEN: 13,
+	# SEA_GREEN: 14,
+	# MEDIUM_SEA_GREEN: 15,
+	# CYAN: 16,
+	# ROYAL_BLUE: 17,
+	# DEEP_BLUE: 18,
+	# VIOLET: 19,
+	# DARK_SLATE_BLUE: 20,
+	# LIGHT_INDIGO: 21,
+	# BLUE_VIOLET: 22,
+	# FUCHSIA: 23,
+	# MAGENTA: 24,
+	# SALMON: 25,
+	# LIGHT_PINK: 26,
+	# PEACH_SHADE: 27,
+	# ORANGE_SHADE: 28,
+	# AMBER_SHADE: 29,
+	# ORANGE: 30,
+	# OLIVE: 31,
+	# FOREST_GREEN: 32,
+	# DODGER_BLUE: 33,
+	# MEDIUM_PURPLE: 34,
+	# PALE_VIOLET_RED: 35,
+	# LIGHT_YELLOW: 77,
+	# DARK_BLUE: 93,
+	# PURPLE: 107,
+	# WHITE: 122,
+	# LIGHT_GREY: 123,
+	# DARK_GREY: 124,
+	# BLUE: 125,
+	# GREEN: 126,
+	# RED: 127
 
 
 
@@ -327,19 +372,16 @@ class UtilColors:
 		NoItem = ModGridRGB.OFF
 		ScrollingIndicator = ModGridRGB.BLUE
 
-
 	class ChainNavigation:
 		ItemNotSelected = ModGridRGB.GREEN
 		ItemSelected = ModGridRGB.DARK_GREEN
 		NoItem = ModGridRGB.OFF
 		ScrollingIndicator = ModGridRGB.BLUE
 
-
 	class ModeButtons:
 		Main = ModGridRGB.WHITE
 		Select = ModGridRGB.RED
 		Clips = ModGridRGB.GREEN
-
 
 	class DefaultButton:
 		On = ModGridRGB.WHITE
@@ -385,10 +427,9 @@ class UtilColors:
 		Playing = ModGridRGB.GREEN
 		Empty = ModGridRGB.OFF
 
-
 	class LoopSelector:
 		Playhead = ModGridRGB.YELLOW
-		OutsideLoop = ModGridRGB.BLUE
+		OutsideLoop = ModGridRGB.GREY
 		InsideLoopStartBar = ModGridRGB.CYAN
 		SelectedPage = ModGridRGB.WHITE
 		InsideLoop = ModGridRGB.CYAN
@@ -423,7 +464,7 @@ class UtilColors:
 		AssignOff = ModGridRGB.DARK_GREEN
 
 	class Mixer:
-		SoloOn = ModGridRGB.BLUE
+		SoloOn = ModGridRGB.CYAN
 		SoloOff = ModGridRGB.DARK_BLUE
 		MuteOn = ModGridRGB.YELLOW
 		MuteOff = ModGridRGB.DARK_YELLOW
@@ -553,6 +594,10 @@ class UtilColors:
 			EvenValue = ModGridRGB.GREEN
 			OddValue = ModGridRGB.MAGENTA
 
+class PianoInstrument:
+
+	WhiteKey = ModGridRGB.WHITE
+	BlackKey = ModGridRGB.BLACK
 
 class ModGridColors:
 
